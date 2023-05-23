@@ -1,0 +1,36 @@
+{
+    "cluster_fraction": 1.0,
+    "start": 0,
+    "start_date": null,
+    "anchor": 0,
+    "read_num": 8000,
+    "debug_lvl": 3,
+    "alg": [
+        "w",
+        "+",
+        "2"
+    ],
+    "alg_sign": [
+        1,
+        0,
+        1
+    ],
+    "backfill": 2,
+    "bf_para": null,
+    "win": 5,
+    "win_para": [
+        5,
+        0,
+        0
+    ],
+    "ad_win": 0,
+    "ad_bf": 0,
+    "ad_alg": 0,
+    "ad_win_para": null,
+    "ad_bf_para": "ad_bf_para.json",
+    "ad_alg_para": null,
+    "config_n": "config_n.json",
+    "monitor": 500,
+    "job_trace": "SDSC-SP2-1998-4.2-cln.swf",
+    "node_struc": "SDSC-SP2-1998-4.2-cln.swf"
+}

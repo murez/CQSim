@@ -6,7 +6,7 @@ import sys
 import time
 from datetime import datetime
 
-from . import cqsim_main, cqsim_path
+from src import cqsim_main, cqsim_path
 
 
 def datetime_strptime(value: str, format: str):

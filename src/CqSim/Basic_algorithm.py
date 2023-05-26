@@ -5,6 +5,8 @@ from src.types import Time
 
 
 class Basic_algorithm:
+    scoreList: list[float]
+
     def __init__(
         self,
         ad_mode: int,  # = 0,

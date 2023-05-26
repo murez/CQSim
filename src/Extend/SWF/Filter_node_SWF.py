@@ -1,9 +1,9 @@
 import re
 
-import src.Filter.Filter_node as filter_node
+from src.Filter.Filter_node import Filter_node
 
 
-class Filter_node_SWF(filter_node.Filter_node):
+class Filter_node_SWF(Filter_node):
     def reset_config_data(self):
         self.config_start = ";"
         self.config_sep = "\\n"
@@ -20,9 +20,9 @@ class Filter_node_SWF(filter_node.Filter_node):
         nr_sign = ";"  # Not read sign. Mark the line not the job data
         sep_sign = " "  # The sign seperate data in a line
         sep_sign2 = ":"  # The sign seperate data in a line
-        nameList = []
-        nameList.append(["MaxNodes", "node"])
-        nameList.append(["MaxProcs", "proc"])
+        nameList: list[tuple[str, str]] = []
+        nameList.append(("MaxNodes", "node"))
+        nameList.append(("MaxProcs", "proc"))
         regex_rest: str = " *:([^\\n]+)\\n"
         regexList = []
         node_info: dict[str, int] = {}

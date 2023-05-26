@@ -1,6 +1,6 @@
 import re
 
-from src.Filter.Filter_node import Filter_node
+from cqsim.Filter.Filter_node import Filter_node
 
 
 class Filter_node_SWF(Filter_node):

@@ -1,7 +1,7 @@
 import os
 from typing import IO, Optional
 
-from src.types import OpenTextMode, StrOrBytesPath
+from cqsim.types import OpenTextMode, StrOrBytesPath
 
 
 class Log_print:

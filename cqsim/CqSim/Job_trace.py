@@ -2,7 +2,7 @@ import re
 from functools import cmp_to_key
 from typing import IO, Optional, TypedDict
 
-from src.IOModule.Debug_log import Debug_log
+from cqsim.IOModule.Debug_log import Debug_log
 
 
 class JobTraceInfo(TypedDict):

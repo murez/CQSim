@@ -4,17 +4,17 @@ from typing import TypedDict
 from typing_extensions import Required
 
 # import CqSim.Node_struc as Class_Node_struc
-from src.CqSim.Backfill import Backfill
-from src.CqSim.Basic_algorithm import Basic_algorithm
-from src.CqSim.Cqsim_sim import Cqsim_sim, ModuleList
-from src.CqSim.Info_collect import Info_collect
-from src.CqSim.Job_trace import Job_trace
-from src.CqSim.Start_window import Start_window
-from src.Extend.SWF.Filter_job_SWF import Filter_job_SWF
-from src.Extend.SWF.Filter_node_SWF import Filter_node_SWF
-from src.Extend.SWF.Node_struc_SWF import Node_struc_SWF
-from src.IOModule.Debug_log import Debug_log
-from src.IOModule.Output_log import Output, Output_log
+from cqsim.CqSim.Backfill import Backfill
+from cqsim.CqSim.Basic_algorithm import Basic_algorithm
+from cqsim.CqSim.Cqsim_sim import Cqsim_sim, ModuleList
+from cqsim.CqSim.Info_collect import Info_collect
+from cqsim.CqSim.Job_trace import Job_trace
+from cqsim.CqSim.Start_window import Start_window
+from cqsim.Extend.SWF.Filter_job_SWF import Filter_job_SWF
+from cqsim.Extend.SWF.Filter_node_SWF import Filter_node_SWF
+from cqsim.Extend.SWF.Node_struc_SWF import Node_struc_SWF
+from cqsim.IOModule.Debug_log import Debug_log
+from cqsim.IOModule.Output_log import Output, Output_log
 
 
 class ParaList(TypedDict):

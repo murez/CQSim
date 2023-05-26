@@ -1,7 +1,7 @@
 from typing import Optional
 
-from src.IOModule.Debug_log import Debug_log
-from src.types import Time
+from cqsim.IOModule.Debug_log import Debug_log
+from cqsim.types import Time
 
 
 class Basic_algorithm:

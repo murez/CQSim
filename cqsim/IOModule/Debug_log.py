@@ -1,7 +1,7 @@
 from typing import Optional
 
-from src.IOModule.Log_print import Log_print
-from src.types import StrOrBytesPath
+from cqsim.IOModule.Log_print import Log_print
+from cqsim.types import StrOrBytesPath
 
 
 class Debug_log:

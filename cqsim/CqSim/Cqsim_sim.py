@@ -1,16 +1,16 @@
 from typing import Optional, TypedDict
 
-from src.CqSim.Backfill import Backfill
-from src.CqSim.Basic_algorithm import Basic_algorithm
-from src.CqSim.Info_collect import Info_collect
-from src.CqSim.Job_trace import Job_trace
-from src.CqSim.Start_window import Start_window
-from src.CqSim.types import Event, NodeInfo, WaitInfo
-from src.Extend.SWF.Node_struc_SWF import Node_struc_SWF
-from src.IOModule.Debug_log import Debug_log
-from src.IOModule.Log_print import Log_print
-from src.IOModule.Output_log import Output_log
-from src.types import EventCode, Time
+from cqsim.CqSim.Backfill import Backfill
+from cqsim.CqSim.Basic_algorithm import Basic_algorithm
+from cqsim.CqSim.Info_collect import Info_collect
+from cqsim.CqSim.Job_trace import Job_trace
+from cqsim.CqSim.Start_window import Start_window
+from cqsim.CqSim.types import Event, NodeInfo, WaitInfo
+from cqsim.Extend.SWF.Node_struc_SWF import Node_struc_SWF
+from cqsim.IOModule.Debug_log import Debug_log
+from cqsim.IOModule.Log_print import Log_print
+from cqsim.IOModule.Output_log import Output_log
+from cqsim.types import EventCode, Time
 
 
 class ModuleList(TypedDict):

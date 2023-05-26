@@ -1,8 +1,8 @@
 import re
 from typing import Optional, TypedDict
 
-from src.IOModule.Debug_log import Debug_log
-from src.types import StrOrBytesPath, Time
+from cqsim.IOModule.Debug_log import Debug_log
+from cqsim.types import StrOrBytesPath, Time
 
 
 class JobInfo(TypedDict):

@@ -1,8 +1,8 @@
 from typing import Optional
 
-from src.CqSim.Job_trace import JobTraceInfo
-from src.IOModule.Debug_log import Debug_log
-from src.types import Time
+from cqsim.CqSim.Job_trace import JobTraceInfo
+from cqsim.IOModule.Debug_log import Debug_log
+from cqsim.types import Time
 
 
 class Filter_job:

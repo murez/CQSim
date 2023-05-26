@@ -1,7 +1,7 @@
 from typing import Optional, TypedDict
 
-from src.CqSim.Node_struc import JobInfo, Node_struc, PredictJob
-from src.types import Time
+from cqsim.CqSim.Node_struc import JobInfo, Node_struc, PredictJob
+from cqsim.types import Time
 
 
 class PredictNodeInfo(TypedDict):

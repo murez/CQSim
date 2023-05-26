@@ -1,9 +1,9 @@
 from typing import Optional
 
-from src.CqSim.Backfill import BackfillPara
-from src.CqSim.types import WaitInfo
-from src.Extend.SWF.Node_struc_SWF import Node_struc_SWF
-from src.IOModule.Debug_log import Debug_log
+from cqsim.CqSim.Backfill import BackfillPara
+from cqsim.CqSim.types import WaitInfo
+from cqsim.Extend.SWF.Node_struc_SWF import Node_struc_SWF
+from cqsim.IOModule.Debug_log import Debug_log
 
 
 class Start_window:

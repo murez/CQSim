@@ -1,4 +1,4 @@
-from src.Extend.SWF.Filter_job_SWF import Filter_job_SWF
+from cqsim.Extend.SWF.Filter_job_SWF import Filter_job_SWF
 
 ext = {"ext_job_trace": ".swf", "ext_tmp_job": ".csv"}
 path = []

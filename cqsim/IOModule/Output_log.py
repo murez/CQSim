@@ -1,8 +1,8 @@
 from typing import Optional, TypedDict
 
-from src.CqSim.Info_collect import NodeInfo
-from src.CqSim.Job_trace import Job_trace, JobTraceInfo
-from src.IOModule.Log_print import Log_print
+from cqsim.CqSim.Info_collect import NodeInfo
+from cqsim.CqSim.Job_trace import Job_trace, JobTraceInfo
+from cqsim.IOModule.Log_print import Log_print
 
 
 class Output(TypedDict):

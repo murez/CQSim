@@ -1,6 +1,6 @@
 from typing import Optional, TypedDict
 
-from src.types import EventCode, Time
+from cqsim.types import EventCode, Time
 
 
 class Event(TypedDict):

@@ -1,9 +1,9 @@
 from typing import Optional
 
-from src.CqSim.Basic_algorithm import Basic_algorithm
-from src.CqSim.types import NodeInfo
-from src.IOModule.Debug_log import Debug_log
-from src.types import EventCode, Time
+from cqsim.CqSim.Basic_algorithm import Basic_algorithm
+from cqsim.CqSim.types import NodeInfo
+from cqsim.IOModule.Debug_log import Debug_log
+from cqsim.types import EventCode, Time
 
 
 class Info_collect:

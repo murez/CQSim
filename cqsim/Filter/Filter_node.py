@@ -1,6 +1,6 @@
 from typing import Optional
 
-from src.IOModule.Debug_log import Debug_log
+from cqsim.IOModule.Debug_log import Debug_log
 
 
 class Filter_node:

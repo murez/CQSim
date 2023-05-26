@@ -1,7 +1,7 @@
 import re
 
-from src.CqSim.Job_trace import JobTraceInfo
-from src.Filter.Filter_job import Filter_job
+from cqsim.CqSim.Job_trace import JobTraceInfo
+from cqsim.Filter.Filter_job import Filter_job
 
 
 class Filter_job_SWF(Filter_job):

@@ -6,6 +6,8 @@ from src.types import Time
 
 
 class Filter_job:
+    jobList: list[JobTraceInfo]
+
     def __init__(
         self,
         trace: str,

@@ -1,8 +1,6 @@
 from typing import Optional, TypedDict
 
-from typing_extensions import NotRequired, Required
-
-import CqSim.Node_struc as Class_Node_struc
+from src.CqSim.Node_struc import JobInfo, Node_struc, PredictJob
 from src.types import Time
 
 
@@ -12,14 +10,14 @@ class PredictNodeInfo(TypedDict):
     idle: int
 
 
-class Node_struc_SWF(Class_Node_struc.Node_struc):
+class Node_struc_SWF(Node_struc):
     def node_allocate(self, proc_num: int, job_index: int, start: Time, end: Time):
         # self.debug.debug("* "+self.myInfo+" -- node_allocate",5)
         if self.is_available(proc_num) == 0:
             return 0
         self.idle -= proc_num
         self.avail = self.idle
-        temp_job_info: Class_Node_struc.JobInfo = {
+        temp_job_info: JobInfo = {
             "job": job_index,
             "end": end,
             "node": proc_num,
@@ -210,7 +208,7 @@ class Node_struc_SWF(Class_Node_struc.Node_struc):
     def pre_reset(self, time):
         # self.debug.debug("* "+self.myInfo+" -- pre_reset",5)
         self.predict_node: list[PredictNodeInfo] = []
-        self.predict_job: list[Class_Node_struc.PredictJob] = []
+        self.predict_job: list[PredictJob] = []
         self.predict_node.append({"time": time, "idle": self.idle, "avail": self.avail})
 
         temp_job_num = len(self.job_list)

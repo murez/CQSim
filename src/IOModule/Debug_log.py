@@ -1,6 +1,6 @@
 from typing import Optional
 
-from IOModule.Log_print import Log_print
+from src.IOModule.Log_print import Log_print
 from src.types import StrOrBytesPath
 
 

@@ -1,7 +1,5 @@
 from typing import Optional, TypedDict
 
-from CqSim.Basic_algorithm import Basic_algorithm
-from IOModule.Log_print import Log_print
 from src.CqSim.Backfill import Backfill
 from src.CqSim.Basic_algorithm import Basic_algorithm
 from src.CqSim.Info_collect import Info_collect
@@ -10,6 +8,7 @@ from src.CqSim.Start_window import Start_window
 from src.CqSim.types import Event, NodeInfo, WaitInfo
 from src.Extend.SWF.Node_struc_SWF import Node_struc_SWF
 from src.IOModule.Debug_log import Debug_log
+from src.IOModule.Log_print import Log_print
 from src.IOModule.Output_log import Output_log
 from src.types import EventCode, Time
 

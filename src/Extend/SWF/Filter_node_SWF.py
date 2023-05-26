@@ -1,6 +1,6 @@
 import re
 
-import Filter.Filter_node as filter_node
+import src.Filter.Filter_node as filter_node
 
 
 class Filter_node_SWF(filter_node.Filter_node):

@@ -81,9 +81,13 @@ class Basic_algorithm:
                 z = 1
             while i < waitNum:
                 s = float(wait_job[i]["submit"])
-                float(wait_job[i]["reqTime"])
-                float(wait_job[i]["reqProc"])
-                int(currentTime - s)
+                # These variable are used in eval expression, do not delete
+                t = float(wait_job[i]["reqTime"])
+                n = float(wait_job[i]["reqProc"])
+                w = int(currentTime - s)
+                # Prevent black auto delete
+                if s or t or n or w:
+                    pass
                 self.scoreList.append(float(eval(self.algStr)))
                 i += 1
         # self.debug.debug("  Score:"+str(self.scoreList),4)

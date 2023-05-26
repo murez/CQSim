@@ -4,17 +4,17 @@ from typing import TypedDict
 from typing_extensions import Required
 
 # import CqSim.Node_struc as Class_Node_struc
-import CqSim.Backfill as Class_Backfill
-import CqSim.Basic_algorithm as Class_Basic_algorithm
-import CqSim.Cqsim_sim as Class_Cqsim_sim
-import CqSim.Info_collect as Class_Info_collect
-import CqSim.Job_trace as Class_Job_trace
-import CqSim.Start_window as Class_Start_window
-import Extend.SWF.Filter_job_SWF as filter_job_ext
-import Extend.SWF.Filter_node_SWF as filter_node_ext
-import Extend.SWF.Node_struc_SWF as node_struc_ext
-import IOModule.Debug_log as Class_Debug_log
-import IOModule.Output_log as Class_Output_log
+from .CqSim.Backfill import Backfill
+from .CqSim.Basic_algorithm import Basic_algorithm
+from .CqSim.Cqsim_sim import Cqsim_sim, ModuleList
+from .CqSim.Info_collect import Info_collect
+from .CqSim.Job_trace import Job_trace
+from .CqSim.Start_window import Start_window
+from .Extend.SWF.Filter_job_SWF import Filter_job_SWF
+from .Extend.SWF.Filter_node_SWF import Filter_node_SWF
+from .Extend.SWF.Node_struc_SWF import Node_struc_SWF
+from .IOModule.Debug_log import Debug_log
+from .IOModule.Output_log import Output, Output_log
 
 
 class ParaList(TypedDict):
@@ -133,7 +133,7 @@ def cqsim_main(para_list: ParaList):
     output_sys = para_list["path_out"] + para_list["output"] + para_list["ext_si"]
     output_adapt = para_list["path_out"] + para_list["output"] + para_list["ext_ai"]
     output_result = para_list["path_out"] + para_list["output"] + para_list["ext_jr"]
-    output_fn: Class_Output_log.Output = {
+    output_fn: Output = {
         "sys": output_sys,
         "adapt": output_adapt,
         "result": output_result,
@@ -153,7 +153,7 @@ def cqsim_main(para_list: ParaList):
     # Debug
     print(".................... Debug")
     debug_path = para_list["path_debug"] + para_list["debug"] + para_list["ext_debug"]
-    module_debug = Class_Debug_log.Debug_log(
+    module_debug = Debug_log(
         lvl=para_list["debug_lvl"], show=2, path=debug_path, log_freq=log_freq_int
     )
     # module_debug.start_debug()
@@ -163,7 +163,7 @@ def cqsim_main(para_list: ParaList):
     dirPath = os.path.dirname(save_name_j)
     if not os.path.exists(dirPath):
         os.makedirs(dirPath, exist_ok=True)
-    module_filter_job = filter_job_ext.Filter_job_SWF(
+    module_filter_job = Filter_job_SWF(
         trace=trace_name, save=save_name_j, config=config_name_j, debug=module_debug
     )
     module_filter_job.feed_job_trace()
@@ -176,7 +176,7 @@ def cqsim_main(para_list: ParaList):
     dirPath = os.path.dirname(save_name_n)
     if not os.path.exists(dirPath):
         os.makedirs(dirPath, exist_ok=True)
-    module_filter_node = filter_node_ext.Filter_node_SWF(
+    module_filter_node = Filter_node_SWF(
         struc=struc_name, save=save_name_n, config=config_name_n, debug=module_debug
     )
     module_filter_node.read_node_struc()
@@ -185,7 +185,7 @@ def cqsim_main(para_list: ParaList):
 
     # Job Trace
     print(".................... Job Trace")
-    module_job_trace = Class_Job_trace.Job_trace(
+    module_job_trace = Job_trace(
         start=para_list["start"],
         num=para_list["read_num"],
         anchor=para_list["anchor"],
@@ -199,13 +199,13 @@ def cqsim_main(para_list: ParaList):
 
     # Node Structure
     print(".................... Node Structure")
-    module_node_struc = node_struc_ext.Node_struc_SWF(debug=module_debug)
+    module_node_struc = Node_struc_SWF(debug=module_debug)
     module_node_struc.import_node_file(node_file=save_name_n)
     module_node_struc.import_node_config(config_name_n)
 
     # Backfill
     print(".................... Backfill")
-    module_backfill = Class_Backfill.Backfill(
+    module_backfill = Backfill(
         ad_mode=0,
         mode=para_list["backfill"],
         node_module=module_node_struc,
@@ -215,7 +215,7 @@ def cqsim_main(para_list: ParaList):
 
     # Start Window
     print(".................... Start Window")
-    module_win = Class_Start_window.Start_window(
+    module_win = Start_window(
         mode=para_list["win"],
         ad_mode=0,
         node_module=module_node_struc,
@@ -226,7 +226,7 @@ def cqsim_main(para_list: ParaList):
 
     # Basic Algorithm
     print(".................... Basic Algorithm")
-    module_alg = Class_Basic_algorithm.Basic_algorithm(
+    module_alg = Basic_algorithm(
         ad_mode=0,
         element=(para_list["alg"], para_list["alg_sign"]),
         debug=module_debug,
@@ -235,19 +235,15 @@ def cqsim_main(para_list: ParaList):
 
     # Information Collect
     print(".................... Information Collect")
-    module_info_collect = Class_Info_collect.Info_collect(
-        alg_module=module_alg, debug=module_debug
-    )
+    module_info_collect = Info_collect(alg_module=module_alg, debug=module_debug)
 
     # Output Log
     print(".................... Output Log")
-    module_output_log = Class_Output_log.Output_log(
-        output=output_fn, log_freq=log_freq_int
-    )
+    module_output_log = Output_log(output=output_fn, log_freq=log_freq_int)
 
     # Cqsim Simulator
     print(".................... Cqsim Simulator")
-    module_list: Class_Cqsim_sim.ModuleList = {
+    module_list: ModuleList = {
         "job": module_job_trace,
         "node": module_node_struc,
         "backfill": module_backfill,
@@ -257,7 +253,7 @@ def cqsim_main(para_list: ParaList):
         "output": module_output_log,
     }
 
-    module_sim = Class_Cqsim_sim.Cqsim_sim(
+    module_sim = Cqsim_sim(
         module=module_list, debug=module_debug, monitor=para_list["monitor"]
     )
     module_sim.cqsim_sim()

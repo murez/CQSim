@@ -1,45 +1,46 @@
-from typing import Optional, TypedDict
+from typing import NamedTuple, Optional
 
-from cqsim.CqSim.Backfill import Backfill
-from cqsim.CqSim.Basic_algorithm import Basic_algorithm
-from cqsim.CqSim.Info_collect import Info_collect
-from cqsim.CqSim.Job_trace import Job_trace
-from cqsim.CqSim.Start_window import Start_window
-from cqsim.CqSim.types import Event, NodeInfo, WaitInfo
-from cqsim.Extend.SWF.Node_struc_SWF import Node_struc_SWF
-from cqsim.IOModule.Debug_log import Debug_log
-from cqsim.IOModule.Log_print import Log_print
-from cqsim.IOModule.Output_log import Output_log
+from cqsim.cqsim.backfill import Backfill, BackfillPara
+from cqsim.cqsim.basic_algorithm import BasicAlgorithm
+from cqsim.cqsim.info_collect import InfoCollect
+from cqsim.cqsim.job_trace import JobTrace
+from cqsim.cqsim.types import Event, NodeInfo, WaitInfo
+from cqsim.cqsim.window import StartWindow
+from cqsim.extend.swf.node import NodeSWF
+from cqsim.IOModule.debug import DebugLog
+from cqsim.IOModule.file import LogFile
+from cqsim.IOModule.output import OutputLog
 from cqsim.types import EventCode, Time
 
 
-class ModuleList(TypedDict):
-    job: Job_trace
-    node: Node_struc_SWF
+class ModuleList(NamedTuple):
+    job: JobTrace
+    node: NodeSWF
     backfill: Backfill
-    win: Start_window
-    alg: Basic_algorithm
-    info: Info_collect
-    output: Output_log
+    win: StartWindow
+    alg: BasicAlgorithm
+    info: InfoCollect
+    output: OutputLog
 
 
-class Cqsim_sim:
-    debug: Debug_log
+class Cqsim:
+    debug: DebugLog
+    current_time: Time
 
     def __init__(
         self,
         module: ModuleList,
-        debug: Debug_log,
+        debug: DebugLog,
         monitor: Optional[int] = None,
     ):
-        self.myInfo = "Cqsim Sim"
+        self.display_name = "Cqsim Sim"
         self.module = module
         self.debug = debug
         self.monitor = monitor
 
         self.debug.line(4, " ")
         self.debug.line(4, "#")
-        self.debug.debug("# " + self.myInfo, 1)
+        self.debug.debug("# " + self.display_name, 1)
         self.debug.line(4, "#")
 
         self.event_seq = []
@@ -47,26 +48,26 @@ class Cqsim_sim:
         self.monitor_start = 0
         self.current_event = None
         # obsolete
-        self.job_num = len(self.module["job"].job_infos())
-        self.currentTime = 0
+        self.job_num = len(self.module.job.job_infos())
+        self.current_time = 0
         # obsolete
         self.read_job_buf_size = 100
         self.read_job_pointer = 0  # next position in job list
         self.previous_read_job_time = -1  # lastest read job submit time
 
         self.debug.line(4)
-        for module_name in self.module:
-            temp_name = self.module[module_name].myInfo
+        for m in self.module:
+            temp_name = m.display_name
             self.debug.debug(temp_name + " ................... Load", 4)
             self.debug.line(4)
 
     def reset(
         self,
         module: Optional[ModuleList] = None,
-        debug: Optional[Debug_log] = None,
+        debug: Optional[DebugLog] = None,
         monitor: Optional[int] = None,
     ):
-        # self.debug.debug("# "+self.myInfo+" -- reset",5)
+        # self.debug.debug("# "+self.display_name+" -- reset",5)
         if module:
             self.module = module
 
@@ -80,15 +81,15 @@ class Cqsim_sim:
         self.monitor_start = 0
         self.current_event = None
         # obsolete
-        self.job_num = len(self.module["job"].job_infos())
-        self.currentTime = 0
+        self.job_num = len(self.module.job.job_infos())
+        self.current_time = 0
         # obsolete
         self.read_job_buf_size = 100
         self.read_job_pointer = 0
         self.previous_read_job_time = -1
 
     def cqsim_sim(self):
-        # self.debug.debug("# "+self.myInfo+" -- cqsim_sim",5)
+        # self.debug.debug("# "+self.display_name+" -- cqsim_sim",5)
         # self.insert_submit_events()
         self.import_submit_events()
         # self.insert_event_job()
@@ -103,18 +104,18 @@ class Cqsim_sim:
         # fread jobs to job list and buffer to event_list dynamically
         if self.read_job_pointer < 0:
             return -1
-        temp_return = self.module["job"].dyn_import_job_file()
+        temp_return = self.module.job.dyn_import_job_file()
         i = self.read_job_pointer
         # while (i < len(self.module['job'].job_infos())):
-        while i < self.module["job"].job_info_len():
-            self.insert_event(1, self.module["job"].job_info(i)["submit"], 2, [1, i])
-            self.previous_read_job_time = self.module["job"].job_info(i)["submit"]
+        while i < self.module.job.job_info_len():
+            self.insert_event(1, self.module.job.job_info(i)["submit"], 2, [1, i])
+            self.previous_read_job_time = self.module.job.job_info(i)["submit"]
             self.debug.debug(
                 "  "
                 + "Insert job["
                 + "2"
                 + "] "
-                + str(self.module["job"].job_info(i)["submit"]),
+                + str(self.module.job.job_info(i)["submit"]),
                 4,
             )
             i += 1
@@ -129,19 +130,19 @@ class Cqsim_sim:
     # obsolete
     def insert_submit_events(self):
         # first read all jobs to job list, buffer to event_list dynamically
-        # self.debug.debug("# "+self.myInfo+" -- insert_event_job",5)
+        # self.debug.debug("# "+self.display_name+" -- insert_event_job",5)
         if self.read_job_pointer < 0:
             return -1
         i = self.read_job_pointer
         while i < self.read_job_buf_size + self.read_job_pointer and i < self.job_num:
-            self.insert_event(1, self.module["job"].job_info(i)["submit"], 2, [1, i])
-            self.previous_read_job_time = self.module["job"].job_info(i)["submit"]
+            self.insert_event(1, self.module.job.job_info(i)["submit"], 2, [1, i])
+            self.previous_read_job_time = self.module.job.job_info(i)["submit"]
             self.debug.debug(
                 "  "
                 + "Insert job["
                 + "2"
                 + "] "
-                + str(self.module["job"].job_info(i)["submit"]),
+                + str(self.module.job.job_info(i)["submit"]),
                 4,
             )
             i += 1
@@ -153,23 +154,23 @@ class Cqsim_sim:
 
     # obsolete
     def insert_event_job(self):
-        # self.debug.debug("# "+self.myInfo+" -- insert_event_job",5)
+        # self.debug.debug("# "+self.display_name+" -- insert_event_job",5)
         i = 0
         while i < self.job_num:
-            self.insert_event(1, self.module["job"].job_info(i)["submit"], 2, [1, i])
+            self.insert_event(1, self.module.job.job_info(i)["submit"], 2, [1, i])
             self.debug.debug(
                 "  "
                 + "Insert job["
                 + "2"
                 + "] "
-                + str(self.module["job"].job_info(i)["submit"]),
+                + str(self.module.job.job_info(i)["submit"]),
                 4,
             )
             i += 1
         return
 
     def insert_event_monitor(self, start, end):
-        # self.debug.debug("# "+self.myInfo+" -- insert_event_monitor",5)
+        # self.debug.debug("# "+self.display_name+" -- insert_event_monitor",5)
         if not self.monitor:
             return -1
         temp_num = start / self.monitor
@@ -187,11 +188,13 @@ class Cqsim_sim:
         return
 
     def insert_event_extend(self):
-        # self.debug.debug("# "+self.myInfo+" -- insert_event_extend",5)
+        # self.debug.debug("# "+self.display_name+" -- insert_event_extend",5)
         return
 
-    def insert_event(self, type, time, priority, para=None):
-        # self.debug.debug("# "+self.myInfo+" -- insert_event",5)
+    def insert_event(
+        self, type: int, time: Time, priority: int, para: Optional[list[int]] = None
+    ):
+        # self.debug.debug("# "+self.display_name+" -- insert_event",5)
         temp_index = -1
         new_event: Event = {"type": type, "time": time, "prio": priority, "para": para}
         if type == 1:
@@ -215,11 +218,11 @@ class Cqsim_sim:
             self.event_seq.insert(temp_index, new_event)
 
     def delete_event(self, type, time, index):
-        # self.debug.debug("# "+self.myInfo+" -- delete_event",5)
+        # self.debug.debug("# "+self.display_name+" -- delete_event",5)
         return
 
     def get_index_monitor(self):
-        # self.debug.debug("# "+self.myInfo+" -- get_index_monitor",5)
+        # self.debug.debug("# "+self.display_name+" -- get_index_monitor",5)
         """
         if (self.event_pointer>=self.monitor_start):
             self.monitor_start=self.event_pointer+1
@@ -231,7 +234,7 @@ class Cqsim_sim:
         return self.monitor_start
 
     def scan_event(self):
-        # self.debug.debug("# "+self.myInfo+" -- scan_event",5)
+        # self.debug.debug("# "+self.display_name+" -- scan_event",5)
         self.debug.line(2, " ")
         self.debug.line(2, "=")
         self.debug.line(2, "=")
@@ -257,25 +260,25 @@ class Cqsim_sim:
 
             assert temp_current_event
             self.current_event = temp_current_event
-            self.currentTime = temp_currentTime
+            self.current_time = temp_currentTime
             if self.current_event["type"] == 1:
                 self.debug.line(2, " ")
                 self.debug.line(2, ">>>")
                 self.debug.line(2, "--")
                 # print ("  Time: "+str(self.currentTime))
-                self.debug.debug("  Time: " + str(self.currentTime), 2)
+                self.debug.debug("  Time: " + str(self.current_time), 2)
                 self.debug.debug("   " + str(self.current_event), 2)
                 self.debug.line(2, "--")
-                self.debug.debug("  Wait: " + str(self.module["job"].wait_list()), 2)
-                self.debug.debug("  Run : " + str(self.module["job"].run_list()), 2)
+                self.debug.debug("  Wait: " + str(self.module.job.wait_list()), 2)
+                self.debug.debug("  Run : " + str(self.module.job.run_list()), 2)
                 self.debug.line(2, "--")
                 self.debug.debug(
                     "  Tot:"
-                    + str(self.module["node"].get_tot())
+                    + str(self.module.node.get_tot())
                     + " Idle:"
-                    + str(self.module["node"].get_idle())
+                    + str(self.module.node.get_idle())
                     + " Avail:"
-                    + str(self.module["node"].get_avail())
+                    + str(self.module.node.get_avail())
                     + " ",
                     2,
                 )
@@ -296,7 +299,7 @@ class Cqsim_sim:
         return
 
     def event_job(self, para_in=None):
-        # self.debug.debug("# "+self.myInfo+" -- event_job",5)
+        # self.debug.debug("# "+self.display_name+" -- event_job",5)
         """
         self.debug.line(2,"xxxxx")
         i = 0
@@ -318,72 +321,64 @@ class Cqsim_sim:
         # if (self.event_pointer < len(self.event_seq)-1):
         if len(self.event_seq) > 1:
             # self.insert_event_monitor(self.currentTime, self.event_seq[self.event_pointer+1]['time'])
-            self.insert_event_monitor(self.currentTime, self.event_seq[1]["time"])
+            self.insert_event_monitor(self.current_time, self.event_seq[1]["time"])
         return
 
     def event_monitor(self, para_in=None):
-        # self.debug.debug("# "+self.myInfo+" -- event_monitor",5)
+        # self.debug.debug("# "+self.display_name+" -- event_monitor",5)
         self.alg_adapt()
         self.window_adapt()
         self.print_adapt(None)
         return
 
     def event_extend(self, para_in=None):
-        # self.debug.debug("# "+self.myInfo+" -- event_extend",5)
+        # self.debug.debug("# "+self.display_name+" -- event_extend",5)
         return
 
-    def submit(self, job_index):
-        # self.debug.debug("# "+self.myInfo+" -- submit",5)
+    def submit(self, job_index: int):
+        # self.debug.debug("# "+self.display_name+" -- submit",5)
         self.debug.debug("[Submit]  " + str(job_index), 3)
-        self.module["job"].job_submit(job_index)
+        self.module.job.job_submit(job_index)
         return
 
     def finish(self, job_index):
-        # self.debug.debug("# "+self.myInfo+" -- finish",5)
+        # self.debug.debug("# "+self.display_name+" -- finish",5)
         self.debug.debug("[Finish]  " + str(job_index), 3)
-        self.module["node"].node_release(job_index, self.currentTime)
-        self.module["job"].job_finish(job_index)
-        self.module["output"].print_result(self.module["job"], job_index)
-        self.module["job"].remove_job_from_dict(job_index)
+        self.module.node.node_release(job_index, self.current_time)
+        self.module.job.job_finish(job_index)
+        self.module.output.print_result(self.module.job, job_index)
+        self.module.job.remove_job_from_dict(job_index)
         return
 
     def start(self, job_index):
-        # self.debug.debug("# "+self.myInfo+" -- start",5)
+        # self.debug.debug("# "+self.display_name+" -- start",5)
         self.debug.debug("[Start]  " + str(job_index), 3)
-        self.module["job"].job_info(job_index)["reqProc"]
-        self.module["node"].node_allocate(
-            self.module["job"].job_info(job_index)["reqProc"],
+        self.module.job.job_info(job_index)["reqProc"]
+        self.module.node.node_allocate(
+            self.module.job.job_info(job_index)["reqProc"],
             job_index,
-            self.currentTime,
-            self.currentTime + self.module["job"].job_info(job_index)["reqTime"],
+            self.current_time,
+            self.current_time + self.module.job.job_info(job_index)["reqTime"],
         )
-        self.module["job"].job_start(job_index, self.currentTime)
+        self.module.job.job_start(job_index, self.current_time)
         self.insert_event(
             1,
-            self.currentTime + self.module["job"].job_info(job_index)["run"],
+            self.current_time + self.module.job.job_info(job_index)["run"],
             1,
             [2, job_index],
         )
         return
 
     def score_calculate(self):
-        # self.debug.debug("# "+self.myInfo+" -- score_calculate",5)
-        temp_wait_list = self.module["job"].wait_list()
-        wait_num = len(temp_wait_list)
-        temp_wait = []
-        i = 0
-        while i < wait_num:
-            temp_job = self.module["job"].job_info(temp_wait_list[i])
-            temp_wait.append(temp_job)
-            i += 1
-        score_list = self.module["alg"].get_score(temp_wait, self.currentTime)
-        self.module["job"].refresh_score(score_list)
+        wait_job = [self.module.job.job_info(i) for i in self.module.job.wait_list()]
+        score_list = self.module.alg.get_score(wait_job, self.current_time)
+        self.module.job.refresh_score(score_list)
         return
 
     def start_scan(self):
-        # self.debug.debug("# "+self.myInfo+" -- start_scan",5)
-        start_max = self.module["win"].start_num()
-        temp_wait = self.module["job"].wait_list()
+        # self.debug.debug("# "+self.display_name+" -- start_scan",5)
+        start_max = self.module.win.start_num()
+        temp_wait = self.module.job.wait_list()
         wait_num = len(temp_wait)
         win_count = start_max
 
@@ -393,11 +388,11 @@ class Cqsim_sim:
                 win_count = 0
                 temp_wait = self.start_window(temp_wait)
             # print "....  ", temp_wait[i]
-            temp_job = self.module["job"].job_info(temp_wait[i])
-            if self.module["node"].is_available(temp_job["reqProc"]):
+            temp_job = self.module.job.job_info(temp_wait[i])
+            if self.module.node.is_available(temp_job["reqProc"]):
                 self.start(temp_wait[i])
             else:
-                temp_wait = self.module["job"].wait_list()
+                temp_wait = self.module.job.wait_list()
                 self.backfill(temp_wait)
                 break
             i += 1
@@ -405,8 +400,8 @@ class Cqsim_sim:
         return
 
     def start_window(self, temp_wait_B):
-        # self.debug.debug("# "+self.myInfo+" -- start_window",5)
-        win_size = self.module["win"].window_size()
+        # self.debug.debug("# "+self.display_name+" -- start_window",5)
+        win_size = self.module.win.window_size()
 
         if len(temp_wait_B) > win_size:
             temp_wait_A = temp_wait_B[0:win_size]
@@ -419,43 +414,43 @@ class Cqsim_sim:
         max_num = len(temp_wait_A)
         i = 0
         while i < max_num:
-            temp_job = self.module["job"].job_info(temp_wait_A[i])
+            temp_job = self.module.job.job_info(temp_wait_A[i])
             temp_wait_info.append(
-                {
-                    "index": temp_wait_A[i],
-                    "proc": temp_job["reqProc"],
-                    "node": temp_job["reqProc"],
-                    "run": temp_job["run"],
-                    "score": temp_job["score"],
-                }
+                WaitInfo(
+                    index=temp_wait_A[i],
+                    proc=temp_job["reqProc"],
+                    node=temp_job["reqProc"],
+                    run=temp_job["run"],
+                    score=temp_job["score"],
+                )
             )
             i += 1
 
-        temp_wait_A = self.module["win"].start_window(
-            temp_wait_info, {"time": self.currentTime}
+        temp_wait_A = self.module.win.start_window(
+            temp_wait_info, BackfillPara(time=self.current_time)
         )
         temp_wait_B[0:0] = temp_wait_A
         return temp_wait_B
 
     def backfill(self, temp_wait):
-        # self.debug.debug("# "+self.myInfo+" -- backfill",5)
+        # self.debug.debug("# "+self.display_name+" -- backfill",5)
         temp_wait_info: list[WaitInfo] = []
         max_num = len(temp_wait)
         i = 0
         while i < max_num:
-            temp_job = self.module["job"].job_info(temp_wait[i])
+            temp_job = self.module.job.job_info(temp_wait[i])
             temp_wait_info.append(
-                {
-                    "index": temp_wait[i],
-                    "proc": temp_job["reqProc"],
-                    "node": temp_job["reqProc"],
-                    "run": temp_job["run"],
-                    "score": temp_job["score"],
-                }
+                WaitInfo(
+                    index=temp_wait[i],
+                    proc=temp_job["reqProc"],
+                    node=temp_job["reqProc"],
+                    run=temp_job["run"],
+                    score=temp_job["score"],
+                )
             )
             i += 1
-        backfill_list = self.module["backfill"].backfill(
-            temp_wait_info, {"time": self.currentTime}
+        backfill_list = self.module.backfill.backfill(
+            temp_wait_info, BackfillPara(time=self.current_time)
         )
         # self.debug.debug("HHHHHHHHHHHHH "+str(backfill_list)+" -- backfill",2)
         if not backfill_list:
@@ -466,7 +461,7 @@ class Cqsim_sim:
         return 1
 
     def sys_collect(self):
-        # self.debug.debug("# "+self.myInfo+" -- sys_collect",5)
+        # self.debug.debug("# "+self.display_name+" -- sys_collect",5)
         """
         temp_inter = 0
         if (self.event_pointer+1<len(self.event_seq)):
@@ -484,7 +479,7 @@ class Cqsim_sim:
         """
         temp_inter = 0
         if len(self.event_seq) > 1:
-            temp_inter = self.event_seq[1]["time"] - self.currentTime
+            temp_inter = self.event_seq[1]["time"] - self.current_time
 
         event_code: Optional[EventCode] = None
         if self.event_seq[0]["type"] == 1:
@@ -495,41 +490,41 @@ class Cqsim_sim:
                 event_code = "E"
         elif self.event_seq[0]["type"] == 2:
             event_code = "Q"
-        temp_info = self.module["info"].info_collect(
-            time=self.currentTime,
+        temp_info = self.module.info.info_collect(
+            time=self.current_time,
             event=event_code,
-            uti=(self.module["node"].get_tot() - self.module["node"].get_idle())
+            uti=(self.module.node.get_tot() - self.module.node.get_idle())
             * 1.0
-            / self.module["node"].get_tot(),
-            waitNum=len(self.module["job"].wait_list()),
-            waitSize=self.module["job"].wait_size(),
+            / self.module.node.get_tot(),
+            waitNum=len(self.module.job.wait_list()),
+            waitSize=self.module.job.wait_size(),
             inter=temp_inter,
         )
         self.print_sys_info(temp_info)
         return
 
     def interface(self, sys_info=None):
-        # self.debug.debug("# "+self.myInfo+" -- interface",5)
+        # self.debug.debug("# "+self.display_name+" -- interface",5)
         return
 
     def alg_adapt(self):
-        # self.debug.debug("# "+self.myInfo+" -- alg_adapt",5)
+        # self.debug.debug("# "+self.display_name+" -- alg_adapt",5)
         return 0
 
     def window_adapt(self):
-        # self.debug.debug("# "+self.myInfo+" -- window_adapt",5)
+        # self.debug.debug("# "+self.display_name+" -- window_adapt",5)
         return 0
 
     def print_sys_info(self, sys_info: NodeInfo):
-        # self.debug.debug("# "+self.myInfo+" -- print_sys_info",5)
-        self.module["output"].print_sys_info(sys_info)
+        # self.debug.debug("# "+self.display_name+" -- print_sys_info",5)
+        self.module.output.print_sys_info(sys_info)
 
-    def print_adapt(self, adapt_info: Optional[Log_print] = None):
-        # self.debug.debug("# "+self.myInfo+" -- print_adapt",5)
-        self.module["output"].print_adapt(adapt_info)
+    def print_adapt(self, adapt_info: Optional[LogFile] = None):
+        # self.debug.debug("# "+self.display_name+" -- print_adapt",5)
+        self.module.output.print_adapt(adapt_info)
 
     def print_result(self):
-        # self.debug.debug("# "+self.myInfo+" -- print_result",5)
-        self.module["output"].print_sys_info()
+        # self.debug.debug("# "+self.display_name+" -- print_result",5)
+        self.module.output.print_sys_info()
         self.debug.debug(lvl=1)
-        self.module["output"].print_result(self.module["job"])
+        self.module.output.print_result(self.module.job)

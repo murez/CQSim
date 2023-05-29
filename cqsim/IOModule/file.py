@@ -4,7 +4,7 @@ from typing import IO, Optional
 from cqsim.types import OpenTextMode, StrOrBytesPath
 
 
-class Log_print:
+class LogFile:
     def __init__(self, filePath: Optional[StrOrBytesPath], mode: OpenTextMode = "w"):
         self.filePath = filePath
         self.mode = mode

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Optional, TypedDict
 
 from cqsim.types import EventCode, Time
@@ -10,12 +11,13 @@ class Event(TypedDict):
     para: Optional[list[int]]
 
 
-class WaitInfo(TypedDict):
+@dataclass
+class WaitInfo:
     index: int
     proc: int
     node: int
-    run: float
-    score: int
+    run: Time
+    score: float
 
 
 class NodeInfo(TypedDict):

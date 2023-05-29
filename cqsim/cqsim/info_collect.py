@@ -1,29 +1,29 @@
 from typing import Optional
 
-from cqsim.CqSim.Basic_algorithm import Basic_algorithm
-from cqsim.CqSim.types import NodeInfo
-from cqsim.IOModule.Debug_log import Debug_log
+from cqsim.cqsim.basic_algorithm import BasicAlgorithm
+from cqsim.cqsim.types import NodeInfo
+from cqsim.IOModule.debug import DebugLog
 from cqsim.types import EventCode, Time
 
 
-class Info_collect:
-    def __init__(self, alg_module: Basic_algorithm, debug: Debug_log):
-        self.myInfo = "Info Collect"
+class InfoCollect:
+    def __init__(self, alg_module: BasicAlgorithm, debug: DebugLog):
+        self.display_name = "Info Collect"
         self.alg_module = alg_module
         self.debug = debug
         # self.sys_info = []
 
         self.debug.line(4, " ")
         self.debug.line(4, "#")
-        self.debug.debug("# " + self.myInfo, 1)
+        self.debug.debug("# " + self.display_name, 1)
         self.debug.line(4, "#")
 
     def reset(
         self,
-        alg_module: Optional[Basic_algorithm] = None,
-        debug: Optional[Debug_log] = None,
+        alg_module: Optional[BasicAlgorithm] = None,
+        debug: Optional[DebugLog] = None,
     ):
-        self.debug.debug("* " + self.myInfo + " -- reset", 5)
+        self.debug.debug("* " + self.display_name + " -- reset", 5)
         if alg_module:
             self.alg_module = alg_module
         if debug:
@@ -40,7 +40,7 @@ class Info_collect:
         inter=-1.0,
         extend=None,
     ):
-        self.debug.debug("* " + self.myInfo + " -- info_collect", 5)
+        self.debug.debug("* " + self.display_name + " -- info_collect", 5)
         event_date = time
         temp_info: NodeInfo = {
             "date": event_date,
@@ -58,17 +58,17 @@ class Info_collect:
 
     """
     def info_analysis(self):
-        self.debug.debug("* "+self.myInfo+" -- info_analysis",5)
+        self.debug.debug("* "+self.display_name+" -- info_analysis",5)
         return 1
 
 
     def get_info(self, index):
-        self.debug.debug("* "+self.myInfo+" -- get_info",6)
+        self.debug.debug("* "+self.display_name+" -- get_info",6)
         if index>=len(self.sys_info):
             return None
         return self.sys_info[index]
 
     def get_len(self):
-        self.debug.debug("* "+self.myInfo+" -- get_len",6)
+        self.debug.debug("* "+self.display_name+" -- get_len",6)
         return len(self.sys_info)
     """

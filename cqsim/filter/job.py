@@ -1,11 +1,11 @@
 from typing import Optional
 
-from cqsim.CqSim.Job_trace import JobTraceInfo
-from cqsim.IOModule.Debug_log import Debug_log
+from cqsim.cqsim.job_trace import JobTraceInfo
+from cqsim.IOModule.debug import DebugLog
 from cqsim.types import Time
 
 
-class Filter_job:
+class JobFilter:
     jobList: list[JobTraceInfo]
 
     def __init__(
@@ -18,9 +18,9 @@ class Filter_job:
         density=1.0,
         anchor=0,
         rnum=0,
-        debug: Optional[Debug_log] = None,
+        debug: Optional[DebugLog] = None,
     ):
-        self.myInfo = "Filter Job"
+        self.display_name = "Filter Job"
         self.start = start
         self.sdate = sdate
         self.density = float(density)
@@ -36,7 +36,7 @@ class Filter_job:
         if self.debug:
             self.debug.line(4, " ")
             self.debug.line(4, "#")
-            self.debug.debug("# " + self.myInfo, 1)
+            self.debug.debug("# " + self.display_name, 1)
             self.debug.line(4, "#")
 
         self.reset_config_data()
@@ -51,10 +51,10 @@ class Filter_job:
         density: Optional[float] = None,
         anchor: Optional[int] = None,
         rnum: Optional[int] = None,
-        debug: Optional[Debug_log] = None,
+        debug: Optional[DebugLog] = None,
     ):
         if self.debug:
-            self.debug.debug("* " + self.myInfo + " -- reset", 5)
+            self.debug.debug("* " + self.display_name + " -- reset", 5)
         if start:
             self.start = start
         if sdate:
@@ -80,7 +80,7 @@ class Filter_job:
 
     def reset_config_data(self):
         if self.debug:
-            self.debug.debug("* " + self.myInfo + " -- reset_config_data", 5)
+            self.debug.debug("* " + self.display_name + " -- reset_config_data", 5)
         self.config_start = ";"
         self.config_sep = "\\n"
         self.config_equal = ": "
@@ -89,27 +89,27 @@ class Filter_job:
 
     def read_job_trace(self):
         if self.debug:
-            self.debug.debug("* " + self.myInfo + " -- read_job_trace", 5)
+            self.debug.debug("* " + self.display_name + " -- read_job_trace", 5)
         return
 
     def input_check(self, jobInfo: JobTraceInfo):
         if self.debug:
-            self.debug.debug("* " + self.myInfo + " -- input_check", 5)
+            self.debug.debug("* " + self.display_name + " -- input_check", 5)
         return
 
     def get_job_num(self):
         if self.debug:
-            self.debug.debug("* " + self.myInfo + " -- get_job_num", 6)
+            self.debug.debug("* " + self.display_name + " -- get_job_num", 6)
         return self.jobNum
 
     def get_job_data(self):
         if self.debug:
-            self.debug.debug("* " + self.myInfo + " -- get_job_data", 5)
+            self.debug.debug("* " + self.display_name + " -- get_job_data", 5)
         return self.jobList
 
     def output_job_data(self):
         if self.debug:
-            self.debug.debug("* " + self.myInfo + " -- output_job_data", 5)
+            self.debug.debug("* " + self.display_name + " -- output_job_data", 5)
         if not self.save:
             print("Save file not set!")
             return
@@ -117,7 +117,7 @@ class Filter_job:
 
     def output_job_config(self):
         if self.debug:
-            self.debug.debug("* " + self.myInfo + " -- output_job_config", 5)
+            self.debug.debug("* " + self.display_name + " -- output_job_config", 5)
         if not self.config:
             print("Config file not set!")
             return

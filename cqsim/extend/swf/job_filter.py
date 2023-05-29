@@ -1,10 +1,10 @@
 import re
 
-from cqsim.CqSim.Job_trace import JobTraceInfo
-from cqsim.Filter.Filter_job import Filter_job
+from cqsim.cqsim import JobTraceInfo
+from cqsim.filter import JobFilter
 
 
-class Filter_job_SWF(Filter_job):
+class JobFilterSWF(JobFilter):
     def reset_config_data(self):
         self.config_start = ";"
         self.config_sep = "\\n"

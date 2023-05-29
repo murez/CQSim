@@ -1,12 +1,12 @@
 from typing import Optional
 
-from cqsim.CqSim.Backfill import BackfillPara
-from cqsim.CqSim.types import WaitInfo
-from cqsim.Extend.SWF.Node_struc_SWF import Node_struc_SWF
-from cqsim.IOModule.Debug_log import Debug_log
+from cqsim.cqsim.backfill import BackfillPara
+from cqsim.cqsim.types import WaitInfo
+from cqsim.extend.swf.node import NodeSWF
+from cqsim.IOModule.debug import DebugLog
 
 
-class Start_window:
+class StartWindow:
     current_para: Optional[BackfillPara]
     wait_job: list[WaitInfo]
     seq_list: list[list[int]]
@@ -15,12 +15,12 @@ class Start_window:
         self,
         mode: int,  # 0
         ad_mode: int,  # 0
-        node_module: Node_struc_SWF,
-        debug: Debug_log,
+        node_module: NodeSWF,
+        debug: DebugLog,
         para_list: list[int] = [6, 0, 0],
         para_list_ad: Optional[list[int]] = None,
     ):
-        self.myInfo = "Start Window"
+        self.display_name = "Start Window"
         self.mode = mode
         self.ad_mode = ad_mode
         self.node_module = node_module
@@ -48,7 +48,7 @@ class Start_window:
 
         self.debug.line(4, " ")
         self.debug.line(4, "#")
-        self.debug.debug("# " + self.myInfo, 1)
+        self.debug.debug("# " + self.display_name, 1)
         self.debug.line(4, "#")
 
         self.reset_list()
@@ -57,12 +57,12 @@ class Start_window:
         self,
         mode: Optional[int] = None,
         ad_mode: Optional[int] = None,
-        node_module: Optional[Node_struc_SWF] = None,
-        debug: Optional[Debug_log] = None,
+        node_module: Optional[NodeSWF] = None,
+        debug: Optional[DebugLog] = None,
         para_list: Optional[list[int]] = None,
         para_list_ad: Optional[list[int]] = None,
     ):
-        # self.debug.debug("* "+self.myInfo+" -- reset",5)
+        # self.debug.debug("* "+self.display_name+" -- reset",5)
         if mode:
             self.mode = mode
         if ad_mode:
@@ -96,7 +96,7 @@ class Start_window:
     def start_window(
         self, wait_job: list[WaitInfo], para_in: Optional[BackfillPara] = None
     ):
-        # self.debug.debug("* "+self.myInfo+" -- start_window",5)
+        # self.debug.debug("* "+self.display_name+" -- start_window",5)
         self.current_para = para_in
         temp_len = len(wait_job)
         self.wait_job = []
@@ -111,7 +111,7 @@ class Start_window:
         return result
 
     def main(self):
-        # self.debug.debug("* "+self.myInfo+" -- main",5)
+        # self.debug.debug("* "+self.display_name+" -- main",5)
         result = []
         if self.mode == 1:
             # window
@@ -122,29 +122,29 @@ class Start_window:
             i = 0
             temp_list: list[int] = []
             while i < self.temp_check_len:
-                temp_list.append(self.wait_job[i]["index"])
+                temp_list.append(self.wait_job[i].index)
                 i += 1
             return temp_list
         return result
 
     def window_adapt(self, para_in: Optional[BackfillPara] = None):
-        # self.debug.debug("* "+self.myInfo+" -- window_adapt",5)
+        # self.debug.debug("* "+self.display_name+" -- window_adapt",5)
         return 0
 
     def window_size(self):
-        # self.debug.debug("* "+self.myInfo+" -- window_size",6)
+        # self.debug.debug("* "+self.display_name+" -- window_size",6)
         return self.win_size
 
     def check_size(self):
-        # self.debug.debug("* "+self.myInfo+" -- check_size",6)
+        # self.debug.debug("* "+self.display_name+" -- check_size",6)
         return self.check_size_in
 
     def start_num(self):
-        # self.debug.debug("* "+self.myInfo+" -- start_num",6)
+        # self.debug.debug("* "+self.display_name+" -- start_num",6)
         return self.max_start_size
 
     def reset_list(self):
-        # self.debug.debug("* "+self.myInfo+" -- reset_list",5)
+        # self.debug.debug("* "+self.display_name+" -- reset_list",5)
         self.seq_list = []
         self.temp_list = []
         self.wait_job = []
@@ -157,7 +157,7 @@ class Start_window:
         self.build_seq_list(self.check_size_in, ele, self.check_size_in - 1)
 
     def build_seq_list(self, seq_len: int, ele_pool: list[int], temp_index: int):
-        # self.debug.debug("* "+self.myInfo+" -- build_seq_list",6)
+        # self.debug.debug("* "+self.display_name+" -- build_seq_list",6)
         if seq_len <= 1:
             self.temp_list[temp_index] = ele_pool[0]
             temp_seq_save = self.temp_list[:]
@@ -172,7 +172,7 @@ class Start_window:
                 i -= 1
 
     def window_check(self):
-        # self.debug.debug("* "+self.myInfo+" -- window_check",5)
+        # self.debug.debug("* "+self.display_name+" -- window_check",5)
         assert self.current_para is not None
 
         temp_wait_list: list[int] = []
@@ -181,7 +181,7 @@ class Start_window:
         temp_max = 1
         i = 1
         if self.temp_check_len == 1:
-            return [self.wait_job[0]["index"]]
+            return [self.wait_job[0].index]
 
         while i <= self.temp_check_len:
             temp_max = temp_max * i
@@ -191,24 +191,24 @@ class Start_window:
         while i < temp_max:
             j = 0
             temp_index = 0
-            self.node_module.pre_reset(self.current_para["time"])
+            self.node_module.predict_reset(self.current_para.time)
             while j < self.temp_check_len:
                 temp_index = self.node_module.reserve(
-                    self.wait_job[self.seq_list[i][j]]["proc"],
-                    self.wait_job[self.seq_list[i][j]]["index"],
-                    self.wait_job[self.seq_list[i][j]]["run"],
+                    self.wait_job[self.seq_list[i][j]].proc,
+                    self.wait_job[self.seq_list[i][j]].index,
+                    self.wait_job[self.seq_list[i][j]].run,
                     index=temp_index,
                 )
                 j += 1
 
-            if temp_last == -1 or temp_last > self.node_module.pre_get_last()["end"]:
-                temp_last = self.node_module.pre_get_last()["end"]
+            if temp_last == -1 or temp_last > self.node_module.predict_last_end():
+                temp_last = self.node_module.predict_last_end()
                 temp_wait_list = self.seq_list[i]
             i += 1
 
         i = 0
         while i < self.temp_check_len:
-            temp_wait_listB.append(self.wait_job[temp_wait_list[i]]["index"])
+            temp_wait_listB.append(self.wait_job[temp_wait_list[i]].index)
             i += 1
 
         return temp_wait_listB

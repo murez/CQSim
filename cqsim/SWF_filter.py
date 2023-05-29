@@ -1,4 +1,4 @@
-from cqsim.Extend.SWF.Filter_job_SWF import Filter_job_SWF
+from cqsim.extend.swf.job_filter import JobFilterSWF
 
 ext = {"ext_job_trace": ".swf", "ext_tmp_job": ".csv"}
 path = []
@@ -54,7 +54,7 @@ SWF_files[1].append("SHARCNET-Whale-2005-2")
 trace_name = ""
 save_name = ""
 
-filter_job = Filter_job_SWF(
+filter_job = JobFilterSWF(
     trace=trace_name, save=save_name, sdate=None, debug=None, config="???"
 )
 for i in SWF_files[0]:

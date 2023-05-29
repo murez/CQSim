@@ -1,8 +1,8 @@
 from typing import Optional, TypedDict
 
-from cqsim.CqSim.Info_collect import NodeInfo
-from cqsim.CqSim.Job_trace import Job_trace, JobTraceInfo
-from cqsim.IOModule.Log_print import Log_print
+from cqsim.cqsim.info_collect import NodeInfo
+from cqsim.cqsim.job_trace import JobTrace, JobTraceInfo
+from cqsim.IOModule.file import LogFile
 
 
 class Output(TypedDict):
@@ -11,12 +11,12 @@ class Output(TypedDict):
     result: str
 
 
-class Output_log:
+class OutputLog:
     job_buf: list[JobTraceInfo]
     sys_info_buf: list[NodeInfo]
 
     def __init__(self, output: Optional[Output] = None, log_freq=1):
-        self.myInfo = "Output_log"
+        self.display_name = "Output_log"
         self.output_path = output
         self.sys_info_buf = []
         self.job_buf = []
@@ -35,19 +35,19 @@ class Output_log:
     def reset_output(self):
         if self.output_path is None:
             return
-        self.sys_info = Log_print(self.output_path["sys"], "w")
+        self.sys_info = LogFile(self.output_path["sys"], "w")
         self.sys_info.reset(self.output_path["sys"], "w")
         self.sys_info.file_open()
         self.sys_info.file_close()
         self.sys_info.reset(self.output_path["sys"], "a")
 
-        self.adapt_info = Log_print(self.output_path["adapt"], "w")
+        self.adapt_info = LogFile(self.output_path["adapt"], "w")
         self.adapt_info.reset(self.output_path["adapt"], "w")
         self.adapt_info.file_open()
         self.adapt_info.file_close()
         self.adapt_info.reset(self.output_path["adapt"], "a")
 
-        self.job_result = Log_print(self.output_path["result"], "w")
+        self.job_result = LogFile(self.output_path["result"], "w")
         self.job_result.reset(self.output_path["result"], "w")
         self.job_result.file_open()
         self.job_result.file_close()
@@ -102,7 +102,7 @@ class Output_log:
             self.sys_info.file_close()
             self.sys_info_buf = []
 
-    def print_adapt(self, adapt_info: Optional[Log_print] = None):
+    def print_adapt(self, adapt_info: Optional[LogFile] = None):
         sep_sign = ";"
         context = ""
         if adapt_info is None:
@@ -111,7 +111,7 @@ class Output_log:
         adapt_info.log_print(context, 1)
         adapt_info.file_close()
 
-    def print_result(self, job_module: Job_trace, job_index: Optional[int] = None):
+    def print_result(self, job_module: JobTrace, job_index: Optional[int] = None):
         if job_index != None:
             self.job_buf.append(job_module.job_info(job_index))
         if (len(self.job_buf) >= self.log_freq) or (job_index == None):

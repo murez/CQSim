@@ -3,7 +3,7 @@ from typing import Optional
 from cqsim.cqsim.backfill import BackfillPara
 from cqsim.cqsim.types import WaitInfo
 from cqsim.extend.swf.node import NodeSWF
-from cqsim.IOModule.debug import DebugLog
+from cqsim.logging.debug import DebugLog
 
 
 class StartWindow:

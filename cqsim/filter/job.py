@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from cqsim.cqsim.job_trace import Job
-from cqsim.IOModule.debug import DebugLog
+from cqsim.logging.debug import DebugLog
 from cqsim.types import Time
 
 

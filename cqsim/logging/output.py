@@ -2,7 +2,7 @@ from typing import Optional, TypedDict
 
 from cqsim.cqsim.info_collect import NodeInfo
 from cqsim.cqsim.job_trace import JobTrace, JobTraceInfo
-from cqsim.IOModule.file import LogFile
+from cqsim.logging.file import LogFile
 
 
 class Output(TypedDict):

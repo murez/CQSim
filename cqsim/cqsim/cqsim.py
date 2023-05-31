@@ -7,9 +7,9 @@ from cqsim.cqsim.job_trace import JobTrace
 from cqsim.cqsim.types import Event, NodeInfo, WaitInfo
 from cqsim.cqsim.window import StartWindow
 from cqsim.extend.swf.node import NodeSWF
-from cqsim.IOModule.debug import DebugLog
-from cqsim.IOModule.file import LogFile
-from cqsim.IOModule.output import OutputLog
+from cqsim.logging.debug import DebugLog
+from cqsim.logging.file import LogFile
+from cqsim.logging.output import OutputLog
 from cqsim.types import EventCode, Time
 
 

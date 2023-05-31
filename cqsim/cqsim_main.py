@@ -14,8 +14,8 @@ from cqsim.cqsim.window import StartWindow
 from cqsim.extend.swf.job_filter import JobFilterSWF
 from cqsim.extend.swf.node import NodeSWF
 from cqsim.extend.swf.node_filter import NodeFilterSWF
-from cqsim.IOModule.debug import DebugLog
-from cqsim.IOModule.output import Output, OutputLog
+from cqsim.logging.debug import DebugLog
+from cqsim.logging.output import Output, OutputLog
 
 
 class ParaList(TypedDict):

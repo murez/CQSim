@@ -1,6 +1,6 @@
 from typing import Optional
 
-from cqsim.IOModule.file import LogFile
+from cqsim.logging.file import LogFile
 from cqsim.types import StrOrBytesPath
 
 

@@ -7,7 +7,7 @@ from typing import Optional
 
 import pandas as pd
 
-from cqsim.IOModule.debug import DebugLog
+from cqsim.logging.debug import DebugLog
 from cqsim.types import StrOrBytesPath, Time
 
 

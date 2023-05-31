@@ -8,7 +8,7 @@ from cqsim.cqsim.types import Job
 from cqsim.extend import swf
 from cqsim.extend.swf.format import SWFLoader
 from cqsim.filter.job import ConfigData
-from cqsim.IOModule.debug import DebugLog
+from cqsim.logging.debug import DebugLog
 from cqsim.types import Time
 
 

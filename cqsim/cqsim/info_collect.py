@@ -2,7 +2,7 @@ from typing import Optional
 
 from cqsim.cqsim.basic_algorithm import BasicAlgorithm
 from cqsim.cqsim.types import NodeInfo
-from cqsim.IOModule.debug import DebugLog
+from cqsim.logging.debug import DebugLog
 from cqsim.types import EventCode, Time
 
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-from cqsim.IOModule.debug import DebugLog
+from cqsim.logging.debug import DebugLog
 
 
 @dataclass

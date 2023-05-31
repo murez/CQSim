@@ -1,34 +1,15 @@
-import re
-from io import TextIOWrapper
-from typing import IO, Optional, TypedDict
+import dataclasses
+import json
+from typing import Optional, TypedDict
 
+import pandas as pd
+
+from cqsim.cqsim.types import Job
+from cqsim.extend import swf
 from cqsim.extend.swf.format import SWFLoader
+from cqsim.filter.job import ConfigData
 from cqsim.IOModule.debug import DebugLog
 from cqsim.types import Time
-
-
-# TODO: -1 => None
-# The Standard Workload Format (swf):
-# https://www.cs.huji.ac.il/labs/parallel/workload/swf.html
-class Job(TypedDict):
-    id: int
-    submit_time: float
-    wait_time: float
-    run_time: float
-    allocated_processors: int
-    average_cpu_time: float
-    used_memory: float
-    requested_number_processors: int
-    requested_time: float
-    requested_memory: float
-    status: int
-    user_id: int
-    group_id: int
-    executable_number: int
-    queue_number: int
-    partition_number: int
-    previous_job_id: int
-    think_time_from_previous_job: int
 
 
 class JobTraceInfo(TypedDict):
@@ -59,8 +40,7 @@ class JobTraceInfo(TypedDict):
 
 
 class JobTrace:
-    file: Optional[TextIOWrapper]
-    traces: list[JobTraceInfo]
+    traces: dict[int, JobTraceInfo]
 
     wait_indices: list[int]
     submit_indices: list[int]
@@ -71,7 +51,7 @@ class JobTrace:
 
     def __init__(
         self,
-        start: int,  # -1
+        start: Time,  # -1
         num: Optional[int],  # -1
         anchor: int,  # -1
         density: float,  # 1.0
@@ -87,8 +67,7 @@ class JobTrace:
         self.read_num: int | None = num
         self.density = density
         self.debug = debug
-        self.traces = []
-        self.file = None
+        self.traces = dict()
         self.read_input_freq = read_input_freq
         self.num_delete_jobs = 0
 
@@ -123,8 +102,7 @@ class JobTrace:
             self.debug = debug
         if read_input_freq:
             self.read_input_freq = read_input_freq
-        self.traces = []
-        self.file = None
+        self.traces = dict()
         self.reset_data()
 
     def reset_data(self):
@@ -138,168 +116,33 @@ class JobTrace:
 
     # TODO: read file is still a mess
 
-    def _read_header(self, file: Optional[IO[str]] = None):
-        """
-        Read the header of the job file.
-        """
-        if file is None:
-            file = self.file
-        assert file is not None
-
-        pos = file.tell()
-        line = file.readline()
-        self.swf_loader.load_line(line)
-
-        while line and not self.swf_loader.header_parse_done:
-            pos = file.tell()
-            line = file.readline()
-            self.swf_loader.load_line(line)
-
-        file.seek(pos)
-
-    def _skip_anchor(self, file: Optional[IO[str]] = None):
-        """
-        Skip the anchor lines of the job file.
-        """
-        if file is None:
-            file = self.file
-        assert file is not None
-
-        for _ in range(self.anchor):
-            job: Optional[Job] = None
-
-            while job is None:
-                line = file.readline()
-                if not line:
-                    return
-                job = self.swf_loader.load_line(line)
-
-    # TODO: why not read multiple lines at a time?
-
-    def _readline(self, file: Optional[IO[str]] = None):
-        if file is None:
-            file = self.file
-        assert file is not None
-
-        line = file.readline()
-        if not line:
-            # when no more line, readline() will return empty str
-            return None
-
-        job: Optional[Job] = None
-        while line and job is None:
-            line = file.readline()
-            job = self.swf_loader.load_line(line)
-        if job is None:
-            return None
-
-        if self.min_submit_time is None:
-            self.min_submit_time = job["submit_time"]
-            if self.temp_start < 0:
-                self.temp_start = self.min_submit_time
-            self.start_offset_B = self.min_submit_time - self.temp_start
-
-        trace = JobTraceInfo(
-            id=job["id"],
-            submit=self.density * (job["submit_time"] - self.min_submit_time)
-            + self.temp_start,
-            wait=job["wait_time"],
-            run=job["run_time"],
-            usedProc=job["allocated_processors"],
-            usedAveCPU=job["average_cpu_time"],
-            usedMem=job["used_memory"],
-            reqProc=job["requested_number_processors"],
-            reqTime=job["requested_time"],
-            reqMem=job["requested_memory"],
-            status=job["status"],
-            userID=job["user_id"],
-            groupID=job["group_id"],
-            num_exe=job["executable_number"],
-            num_queue=job["queue_number"],
-            num_part=job["partition_number"],
-            num_pre=job["previous_job_id"],
-            thinkTime=job["think_time_from_previous_job"],
-            start=-1,
-            end=-1,
-            score=0,
-            state=0,
-            happy=-1,
-            estStart=-1,
+    def import_job_file(self, job_file: str):
+        field_types = {field.name: field.type for field in dataclasses.fields(Job)}
+        df = pd.read_csv(
+            job_file,
+            dtype=field_types,
+            comment=";",
         )
-        self.traces.append(trace)
-        self.submit_indices.append(len(self.traces) - 1)
 
-        return trace
-
-    def initial_import_job_file(self, job_file):
-        self.temp_start = self.start
-        # regex_str = "([^;\\n]*)[;\\n]"
-        self.min_submit_time = -1
-        self.traces = []
-        self.reset_data()
-        self.debug.line(4)
-
-        self.file = open(job_file, "r")
-        # read header, then skip self.anchor lines
-        self.swf_loader = SWFLoader(False)
-        self._read_header()
-        self._skip_anchor()
-
-    def dyn_import_job_file(self):
-        if self.file is None:
-            return False
-        if self.file.closed:
-            return False
-
-        for _ in range(self.read_input_freq):
-            if self.read_num is not None and len(self.traces) >= self.read_num:
-                self.file.close()
-                break
-            if not self._readline():
-                self.file.close()
-                break
-
-        return True
-
-    def import_job_file(self, job_file):
-        # self.debug.debug("* "+self.display_name+" -- import_job_file",5)
-        self.start
-        regex_str = "([^;\\n]*)[;\\n]"
-        job_file = open(job_file, "r")
-        self.traces = []
-        self.reset_data()
-        self.swf_loader = SWFLoader(False)
-        self._read_header(job_file)
-        self._skip_anchor(job_file)
-
-        self.debug.line(4)
-        while self.read_num is None or len(self.traces) >= self.read_num:
-            if not self._readline(job_file):
-                job_file.close()
-                break
-
-        self.debug.line(4)
-        job_file.close()
+        # set job list
+        for index, row in df.iterrows():
+            self.traces[len(self.traces)] = JobTraceInfo(
+                start=-1,
+                end=-1,
+                score=0,
+                state=0,
+                happy=-1,
+                estStart=-1,
+                **row.to_dict()
+            )
 
     # XREF: JobFilterSWF.output_job_config()
     def import_job_config(self, config_file):
-        # self.debug.debug("* "+self.display_name+" -- import_job_config",5)
-        regex_str = "([^=\\n]*)[=\\n]"
-        jobFile = open(config_file, "r")
-        config_data = {}
+        with open(config_file, "r") as f:
+            config_data = ConfigData(**json.load(f))
 
-        self.debug.line(4)
-        while 1:
-            tempStr = jobFile.readline()
-            if not tempStr:  # break when no more line
-                break
-            temp_dataList = re.findall(regex_str, tempStr)
-            config_data[temp_dataList[0]] = temp_dataList[1]
-            self.debug.debug(str(temp_dataList[0]) + ": " + str(temp_dataList[1]), 4)
-        self.debug.line(4)
-        jobFile.close()
-        self.start_offset_A = config_data["start_offset"]
-        self.start_date = config_data["date"]
+        self.start_offset_A = config_data.start_offset
+        self.start_date = config_data.date
 
     def submit_list(self):
         # self.debug.debug("* "+self.display_name+" -- submit_list",6)
@@ -398,5 +241,6 @@ class JobTrace:
         self.traces[job_index]["score"] = job_score
 
     def remove_job_from_dict(self, job_index):
+        # TODO: so it must be a dict right?
         self.num_delete_jobs += 1
         return self.traces.pop(job_index)

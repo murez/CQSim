@@ -66,7 +66,7 @@ for i in SWF_files[0]:
     print(trace_name)
     filter_job.reset(trace=trace_name, save=save_name, sdate=None, debug=None)
     filter_job.read_job_trace()
-    filter_job.output_job_data()
+    filter_job.dump_job_list()
 
 for i in SWF_files[1]:
     trace_name = ""
@@ -77,4 +77,4 @@ for i in SWF_files[1]:
     print(trace_name)
     filter_job.reset(trace=trace_name, save=save_name, sdate=None, debug=None)
     filter_job.read_job_trace()
-    filter_job.output_job_data()
+    filter_job.dump_job_list()

@@ -4,9 +4,14 @@ The Standard Workload Format
 
 
 import io
-from typing import Optional
+from typing import IO, TYPE_CHECKING, Optional
 
-from cqsim.cqsim.job_trace import Job
+import pandas as pd
+
+if TYPE_CHECKING:
+    from pandas._typing import FilePath, ReadCsvBuffer
+
+from cqsim.cqsim.types import Job
 
 
 class SWF:
@@ -29,6 +34,38 @@ class SWFLoader:
     remember_jobs: bool
     headers: dict[str, str]
     jobs: list[Job]
+
+    def _read_header(self, file: IO[str]):
+        """
+        Read the header of the job file.
+        """
+        assert file is not None
+
+        pos = file.tell()
+        line = file.readline()
+        self.load_line(line)
+
+        while line and not self.header_parse_done:
+            pos = file.tell()
+            line = file.readline()
+            self.load_line(line)
+
+        file.seek(pos)
+
+    def _skip_anchor(self, file: IO[str], anchor: int):
+        """
+        Skip the anchor lines of the job file.
+        """
+        assert file is not None
+
+        for _ in range(anchor):
+            job: Optional[Job] = None
+
+            while job is None:
+                line = file.readline()
+                if not line:
+                    return
+                job = self.load_line(line)
 
     def __init__(self, remember_jobs: bool = True):
         assert self.header_parse_done == False
@@ -72,9 +109,6 @@ class SWFLoader:
         self.headers[key] = value
         return (key, value)
 
-    def build(self) -> SWF:
-        return SWF(headers=self.headers, jobs=self.jobs)
-
     def load_line(self, line: str):
         if line.startswith(self.header_or_comment_prefix):
             if self.header_parse_done:
@@ -112,7 +146,7 @@ class SWFLoader:
             return job
 
 
-def load(stream: io.TextIOBase | str, header_only: bool = False):
+def load(stream: io.TextIOBase | str, header_only: bool = False, start_offset: int = 0):
     """Load a SWF file from a stream."""
     if isinstance(stream, str):
         lines = stream.splitlines()
@@ -125,5 +159,5 @@ def load(stream: io.TextIOBase | str, header_only: bool = False):
     for line in lines:
         loader.load_line(line)
         if header_only and loader.header_parse_done:
-            return loader.build()
-    return loader.build()
+            return SWF(loader.headers, [])
+    return SWF(loader.headers, loader.jobs[start_offset:])

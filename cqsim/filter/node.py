@@ -83,7 +83,7 @@ class NodeFilter:
         self.config_data = None
         # self.config_data.append({'name_config':'date','name':'StartTime','value':''})
 
-    def read_node_struc(self):
+    def read_node_structure(self):
         raise NotImplementedError
 
     def input_check(self, nodeInfo):

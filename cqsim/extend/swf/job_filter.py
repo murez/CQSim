@@ -1,432 +1,91 @@
-import re
+import dataclasses
+import json
 
-from cqsim.cqsim import JobTraceInfo
+import pandas as pd
+
+from cqsim.cqsim import Job, JobTraceInfo
+from cqsim.extend import swf
 from cqsim.filter import JobFilter
+from cqsim.filter.job import ConfigData
+from cqsim.types import Time
 
 
 class JobFilterSWF(JobFilter):
-    def reset_config_data(self):
-        self.config_start = ";"
-        self.config_sep = "\\n"
-        self.config_equal = ": "
-        self.config_data = [
-            {"name_config": "date", "name": "StartTime", "value": ""},
-            {"name_config": "start_offset", "name": None, "value": ""},
-        ]
+    def reset_config(self):
+        self.config_data = None
 
     def feed_job_trace(self):
         if not self.save:
             print("Save file not set!")
             return
 
-        sep_sign = ";"
-        f2 = open(self.save, "w")
+        with open(self.trace, "r") as f:
+            jobs = swf.load(f)
 
-        nr_sign = ";"  # Not read sign. Mark the line not the job data
-        sept_sign = " "  # The sign seperate data in a line
+        min_submit_time = jobs.jobs[0].submit_time
+        if self.start is None:
+            self.start = min_submit_time
+        assert self.start >= 0
 
-        jobFile = open(self.trace, "r")
-        min_sub = -1
-        temp_readNum = 0
-        temp_start = 0
-        # job_num = 0
-        while temp_readNum < self.rnum or self.rnum <= 0:
-            # print temp_readNum,")(",temp_start
-            tempStr = jobFile.readline()
-            if not tempStr:  # break when no more line
-                break
+        self.config_data = ConfigData(
+            date=jobs.headers["StartTime"],
+            start_offset=min_submit_time - self.start,
+        )
 
-            if tempStr[0] == nr_sign:
-                for con_data in self.config_data:
-                    if con_data["name"]:
-                        con_ex = (
-                            con_data["name"]
-                            + self.config_equal
-                            + "([^"
-                            + self.config_sep
-                            + "]*)"
-                            + self.config_sep
-                        )
-                        temp_con_List = re.findall(con_ex, tempStr)
-                        if len(temp_con_List) >= 1:
-                            con_data["value"] = temp_con_List[0]
-                            break
-            else:  # The job trace line
-                if temp_start >= self.anchor:
-                    strNum = len(tempStr)
-                    newWord = 1
-                    k = 0
-                    ID = ""  # 1
-                    submit = ""  # 2
-                    wait = ""  # 3
-                    run = ""  # 4
-                    usedProc = ""  # 5
-                    usedAveCPU = ""  # 6
-                    usedMem = ""  # 7
-                    reqProc = ""  # 8
-                    reqTime = ""  # 9
-                    reqMem = ""  # 10
-                    status = ""  # 11
-                    userID = ""  # 12
-                    groupID = ""  # 13
-                    num_exe = ""  # 14
-                    num_queue = ""  # 15
-                    num_part = ""  # 16
-                    num_pre = ""  # 17
-                    thinkTime = ""  # 18
+        filtered_jobs: list[Job] = []
+        for job in jobs.jobs:
+            job.scale_submit_time(min_submit_time, self.density, self.start)
+            if self.input_check(job):
+                filtered_jobs.append(job)
 
-                    for i in range(strNum):
-                        if tempStr[i] == "\n":
-                            break
-                        if tempStr[i] == sept_sign:
-                            if newWord == 0:
-                                newWord = 1
-                                k = k + 1
-                        else:
-                            newWord = 0
-                            if k == 0:
-                                ID = ID + tempStr[i]
-                            elif k == 1:
-                                submit = submit + tempStr[i]
-                            elif k == 2:
-                                wait = wait + tempStr[i]
-                            elif k == 3:
-                                run = run + tempStr[i]
-                            elif k == 4:
-                                usedProc = usedProc + tempStr[i]
-                            elif k == 5:
-                                usedAveCPU = usedAveCPU + tempStr[i]
-                            elif k == 6:
-                                usedMem = usedMem + tempStr[i]
-                            elif k == 7:
-                                reqProc = reqProc + tempStr[i]
-                            elif k == 8:
-                                reqTime = reqTime + tempStr[i]
-                            elif k == 9:
-                                reqMem = reqMem + tempStr[i]
-                            elif k == 10:
-                                status = status + tempStr[i]
-                            elif k == 11:
-                                userID = userID + tempStr[i]
-                            elif k == 12:
-                                groupID = groupID + tempStr[i]
-                            elif k == 13:
-                                num_exe = num_exe + tempStr[i]
-                            elif k == 14:
-                                num_queue = num_queue + tempStr[i]
-                            elif k == 15:
-                                num_part = num_part + tempStr[i]
-                            elif k == 16:
-                                num_pre = num_pre + tempStr[i]
-                            elif k == 17:
-                                thinkTime = thinkTime + tempStr[i]
+        df = pd.DataFrame([dataclasses.asdict(job) for job in filtered_jobs])
+        df.to_csv(self.save, index=False)
 
-                    if min_sub < 0:
-                        min_sub = float(submit)
-                        if self.start < 0:
-                            self.start = min_sub
-                        for con_data in self.config_data:
-                            if (
-                                not con_data["name"]
-                                and con_data["name_config"] == "start_offset"
-                            ):
-                                con_data["value"] = min_sub - self.start
-                                break
-
-                    tempInfo: JobTraceInfo = {
-                        "id": int(ID),
-                        "submit": self.density * (float(submit) - min_sub) + self.start,
-                        "wait": float(wait),
-                        "run": float(run),
-                        "usedProc": int(usedProc),
-                        "usedAveCPU": float(usedAveCPU),
-                        "usedMem": float(usedMem),
-                        "reqProc": int(reqProc),
-                        "reqTime": float(reqTime),
-                        "reqMem": float(reqMem),
-                        "status": int(status),
-                        "userID": int(userID),
-                        "groupID": int(groupID),
-                        "num_exe": int(num_exe),
-                        "num_queue": int(num_queue),
-                        "num_part": int(num_part),
-                        "num_pre": int(num_pre),
-                        "thinkTime": int(thinkTime),
-                        "start": -1,
-                        "end": -1,
-                        "score": 0,
-                        "state": 0,
-                        "happy": -1,
-                        "estStart": -1,
-                    }
-                    # state: 0: not submit  1: waiting  2: running  3: done
-
-                    if self.input_check(tempInfo) >= 0:
-                        f2.write(str(tempInfo["id"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["submit"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["wait"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["run"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["usedProc"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["usedAveCPU"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["usedMem"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["reqProc"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["reqTime"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["reqMem"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["status"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["userID"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["groupID"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["num_exe"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["num_queue"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["num_part"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["num_pre"]))
-                        f2.write(sep_sign)
-                        f2.write(str(tempInfo["thinkTime"]))
-                        f2.write("\n")
-                        # self.jobList.append(tempInfo)
-                        temp_readNum += 1
-                        # job_num += 1
-                temp_start += 1
-
-        jobFile.close()
-        f2.close()
-        self.jobNum = temp_readNum
-        # self.jobNum = len(self.jobList)
+        self.job_count = len(filtered_jobs)
 
     def read_job_trace(self):
-        nr_sign = ";"  # Not read sign. Mark the line not the job data
-        sep_sign = " "  # The sign seperate data in a line
+        field_types = {field.name: field.type for field in dataclasses.fields(Job)}
+        df = pd.read_csv(
+            self.trace,
+            dtype=field_types,
+            comment=";",
+        )
 
-        jobFile = open(self.trace, "r")
-        min_sub = -1
-        temp_readNum = 0
-        temp_start = 0
-        while temp_readNum < self.rnum or self.rnum <= 0:
-            # print temp_readNum,")(",temp_start
-            tempStr = jobFile.readline()
-            if not tempStr:  # break when no more line
-                break
-            if tempStr[0] != nr_sign:  # The job trace line
-                if temp_start >= self.anchor:
-                    strNum = len(tempStr)
-                    newWord = 1
-                    k = 0
-                    ID = ""  # 1
-                    submit = ""  # 2
-                    wait = ""  # 3
-                    run = ""  # 4
-                    usedProc = ""  # 5
-                    usedAveCPU = ""  # 6
-                    usedMem = ""  # 7
-                    reqProc = ""  # 8
-                    reqTime = ""  # 9
-                    reqMem = ""  # 10
-                    status = ""  # 11
-                    userID = ""  # 12
-                    groupID = ""  # 13
-                    num_exe = ""  # 14
-                    num_queue = ""  # 15
-                    num_part = ""  # 16
-                    num_pre = ""  # 17
-                    thinkTime = ""  # 18
+        # set job list
+        for index, row in df.iterrows():
+            job = Job(**row.to_dict())
+            if self.input_check(job):
+                self.job_list.append(job)
 
-                    for i in range(strNum):
-                        if tempStr[i] == "\n":
-                            break
-                        if tempStr[i] == sep_sign:
-                            if newWord == 0:
-                                newWord = 1
-                                k = k + 1
-                        else:
-                            newWord = 0
-                            if k == 0:
-                                ID = ID + tempStr[i]
-                            elif k == 1:
-                                submit = submit + tempStr[i]
-                            elif k == 2:
-                                wait = wait + tempStr[i]
-                            elif k == 3:
-                                run = run + tempStr[i]
-                            elif k == 4:
-                                usedProc = usedProc + tempStr[i]
-                            elif k == 5:
-                                usedAveCPU = usedAveCPU + tempStr[i]
-                            elif k == 6:
-                                usedMem = usedMem + tempStr[i]
-                            elif k == 7:
-                                reqProc = reqProc + tempStr[i]
-                            elif k == 8:
-                                reqTime = reqTime + tempStr[i]
-                            elif k == 9:
-                                reqMem = reqMem + tempStr[i]
-                            elif k == 10:
-                                status = status + tempStr[i]
-                            elif k == 11:
-                                userID = userID + tempStr[i]
-                            elif k == 12:
-                                groupID = groupID + tempStr[i]
-                            elif k == 13:
-                                num_exe = num_exe + tempStr[i]
-                            elif k == 14:
-                                num_queue = num_queue + tempStr[i]
-                            elif k == 15:
-                                num_part = num_part + tempStr[i]
-                            elif k == 16:
-                                num_pre = num_pre + tempStr[i]
-                            elif k == 17:
-                                thinkTime = thinkTime + tempStr[i]
+        # set job num
+        self.job_count = len(self.job_list)
 
-                    if min_sub < 0:
-                        min_sub = float(submit)
-                        if self.start < 0:
-                            self.start = min_sub
-                        for con_data in self.config_data:
-                            if (
-                                not con_data["name"]
-                                and con_data["name_config"] == "start_offset"
-                            ):
-                                con_data["value"] = min_sub - self.start
-                                break
+    def input_check(self, job: Job):
+        if int(job.run_time) > int(job.requested_time):
+            job.run_time = job.requested_time
+        if int(job.id) <= 0:
+            return False
+        if int(job.submit_time) < 0:
+            return False
+        if int(job.run_time) <= 0:
+            return False
+        if int(job.requested_time) <= 0:
+            return False
+        if int(job.requested_number_processors) <= 0:
+            return False
+        return True
 
-                    tempInfo: JobTraceInfo = {
-                        "id": int(ID),
-                        "submit": self.density * (float(submit) - min_sub) + self.start,
-                        "wait": float(wait),
-                        "run": float(run),
-                        "usedProc": int(usedProc),
-                        "usedAveCPU": float(usedAveCPU),
-                        "usedMem": float(usedMem),
-                        "reqProc": int(reqProc),
-                        "reqTime": float(reqTime),
-                        "reqMem": float(reqMem),
-                        "status": int(status),
-                        "userID": int(userID),
-                        "groupID": int(groupID),
-                        "num_exe": int(num_exe),
-                        "num_queue": int(num_queue),
-                        "num_part": int(num_part),
-                        "num_pre": int(num_pre),
-                        "thinkTime": int(thinkTime),
-                        "start": -1,
-                        "end": -1,
-                        "score": 0,
-                        "state": 0,
-                        "happy": -1,
-                        "estStart": -1,
-                    }
-                    # state: 0: not submit  1: waiting  2: running  3: done
+    def dump_job_list(self):
+        df = pd.DataFrame([dataclasses.asdict(job) for job in self.job_list])
+        df.to_csv(self.save, index=False)
 
-                    if self.input_check(tempInfo) >= 0:
-                        self.jobList.append(tempInfo)
-                        temp_readNum += 1
-                temp_start += 1
-            else:
-                for con_data in self.config_data:
-                    if con_data["name"]:
-                        con_ex = (
-                            con_data["name"]
-                            + self.config_equal
-                            + "([^"
-                            + self.config_sep
-                            + "]*)"
-                            + self.config_sep
-                        )
-                        temp_con_List = re.findall(con_ex, tempStr)
-                        if len(temp_con_List) >= 1:
-                            con_data["value"] = temp_con_List[0]
-                            break
-
-        jobFile.close()
-        self.jobNum = len(self.jobList)
-
-    def input_check(self, jobInfo):
-        if int(jobInfo["run"]) > int(jobInfo["reqTime"]):
-            jobInfo["run"] = jobInfo["reqTime"]
-        if int(jobInfo["id"]) <= 0:
-            return -2
-        if int(jobInfo["submit"]) < 0:
-            return -3
-        if int(jobInfo["run"]) <= 0:
-            return -4
-        if int(jobInfo["reqTime"]) <= 0:
-            return -5
-        if int(jobInfo["reqProc"]) <= 0:
-            return -6
-        return 1
-
-    def output_job_data(self):
-        if not self.save:
-            print("Save file not set!")
-            return
-
-        sep_sign = ";"
-        f2 = open(self.save, "w")
-
-        for jobResult_o in self.jobList:
-            f2.write(str(jobResult_o["id"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["submit"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["wait"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["run"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["usedProc"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["usedAveCPU"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["usedMem"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["reqProc"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["reqTime"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["reqMem"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["status"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["userID"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["groupID"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["num_exe"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["num_queue"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["num_part"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["num_pre"]))
-            f2.write(sep_sign)
-            f2.write(str(jobResult_o["thinkTime"]))
-            f2.write("\n")
-        f2.close()
-
-    def output_job_config(self):
+    def dump_config(self):
         if not self.config:
             print("Config file not set!")
             return
+        if not self.config_data:
+            print("Config data not set!")
+            return
 
-        format_equal = "="
-        f2 = open(self.config, "w")
-
-        for con_data in self.config_data:
-            f2.write(str(con_data["name_config"]))
-            f2.write(format_equal)
-            f2.write(str(con_data["value"]))
-            f2.write("\n")
-        f2.close()
+        with open(self.config, "w") as f:
+            json.dump(dataclasses.asdict(self.config_data), f)

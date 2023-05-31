@@ -97,16 +97,8 @@ def callback_ad_alg_para(option, opt_str, value: str, parser):
     return
 
 
-def get_raw_name(file_name):
-    output_name = ""
-    length = len(file_name)
-    i = 0
-    while i < length:
-        if file_name[i] == ".":
-            break
-        output_name += file_name[i]
-        i += 1
-    return output_name
+def path_without_extension(file_name: str):
+    return os.path.splitext(file_name)[0]
 
 
 def alg_sign_check(alg_sign_t, leng):
@@ -502,13 +494,13 @@ if __name__ == "__main__":
     if not opts.node_struc:
         inputPara["resource_node"] = 1
     if inputPara.get("output") is None:
-        inputPara["output"] = get_raw_name(opts.job_trace)
+        inputPara["output"] = path_without_extension(opts.job_trace)
     if inputPara.get("debug") is None:
-        inputPara["debug"] = "debug_" + get_raw_name(opts.job_trace)
+        inputPara["debug"] = "debug_" + path_without_extension(opts.job_trace)
     if inputPara.get("job_save") is None:
-        inputPara["job_save"] = get_raw_name(opts.job_trace)
+        inputPara["job_save"] = path_without_extension(opts.job_trace)
     if inputPara.get("node_save") is None:
-        inputPara["node_save"] = get_raw_name(opts.job_trace) + "_node"
+        inputPara["node_save"] = path_without_extension(opts.job_trace) + "_node"
     """
     if not opts.job_save:
         print "Error: Please specify at least one node structure!"

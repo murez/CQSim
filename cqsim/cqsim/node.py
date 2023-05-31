@@ -1,8 +1,11 @@
 import bisect
+import dataclasses
 import itertools
-import re
+import json
 from dataclasses import dataclass, field
 from typing import Optional
+
+import pandas as pd
 
 from cqsim.IOModule.debug import DebugLog
 from cqsim.types import StrOrBytesPath, Time
@@ -42,7 +45,7 @@ class NodeStructure:
     proc: int
     start: Time
     end: Time
-    extend: None
+    extend: Optional[dict] = None
 
 
 class Node:
@@ -90,40 +93,32 @@ class Node:
         self.available_cores = -1
 
     def read_list(self, source_str: str):
-        # self.debug.debug("* "+self.display_name+" -- read_list",5)
-        result_list = []
-        regex_str = r"[\[,]([^,\[\]]*)"
-        result_list: list[int] = re.findall(regex_str, source_str)
-        for item in result_list:
-            item = int(item)
-        return result_list
+        assert source_str[0] == "[" and source_str[-1] == "]"
+        source_str = source_str[1:-1]
+        splited = source_str.split(",")
+        return [int(item) for item in splited]
 
-    def import_node_file(self, node_file: StrOrBytesPath):
+    def import_node_file(self, node_file: str):
         # self.debug.debug("* "+self.display_name+" -- import_node_file",5)
-        regex_str = "([^;\\n]*)[;\\n]"
         self.nodes = []
 
-        i = 0
-        with open(node_file, mode="r") as f:
-            for line in f:
-                temp_dataList = re.findall(regex_str, line)
+        field_types = {
+            field.name: field.type for field in dataclasses.fields(NodeStructure)
+        } | {"location": "str", "extend": "str"}
+        df = pd.read_csv(
+            node_file,
+            dtype=field_types,
+            comment=";",
+        )
+        df["location"] = df["location"].map(self.read_list)
+        df["extend"] = pd.NA
 
-                self.debug.debug("  node[" + str(i) + "]: " + str(temp_dataList), 4)
-                tempInfo = NodeStructure(
-                    id=int(temp_dataList[0]),
-                    location=self.read_list(temp_dataList[1]),
-                    group=int(temp_dataList[2]),
-                    state=int(temp_dataList[3]),
-                    proc=int(temp_dataList[4]),
-                    start=-1,
-                    end=-1,
-                    extend=None,
-                )
-                self.nodes.append(tempInfo)
-                i += 1
+        for index, row in df.iterrows():
+            self.nodes.append(NodeStructure(**row.to_dict()))
         self.total = len(self.nodes)
         self.idle_cores = self.total
         self.available_cores = self.total
+
         self.debug.debug(
             "  Tot:"
             + str(self.total)
@@ -137,21 +132,8 @@ class Node:
         return
 
     def import_node_config(self, config_file: StrOrBytesPath):
-        # self.debug.debug("* "+self.display_name+" -- import_node_config",5)
-        regex_str = "([^=\\n]*)[=\\n]"
-        nodeFile = open(config_file, "r")
-        config_data = {}
-
-        self.debug.line(4)
-        while 1:
-            tempStr = nodeFile.readline()
-            if not tempStr:  # break when no more line
-                break
-            temp_dataList = re.findall(regex_str, tempStr)
-            config_data[temp_dataList[0]] = temp_dataList[1]
-            self.debug.debug(str(temp_dataList[0]) + ": " + str(temp_dataList[1]), 4)
-        self.debug.line(4)
-        nodeFile.close()
+        with open(config_file, "r") as f:
+            json.load(f)
 
     def import_node_data(self, node_data: list):
         # self.debug.debug("* "+self.display_name+" -- import_node_data",5)

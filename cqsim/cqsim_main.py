@@ -1,7 +1,8 @@
 import os
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
-from typing_extensions import Required
+if TYPE_CHECKING:
+    from typing_extensions import Required
 
 # import CqSim.Node_struc as Class_Node_struc
 from cqsim.cqsim.backfill import Backfill
@@ -45,18 +46,18 @@ class ParaList(TypedDict):
     ext_ai: str
     ext_debug: str
     debug_lvl: int
-    alg: Required[list[str]]
-    alg_sign: Required[list[str]]
+    alg: "Required[list[str]]"
+    alg_sign: "Required[list[str]]"
     backfill: int
-    bf_para: Required[list[str]]
+    bf_para: "Required[list[str]]"
     win: int
-    win_para: Required[list[int]]
+    win_para: "Required[list[int]]"
     ad_win: int
-    ad_win_para: Required[list[int]]
+    ad_win_para: "Required[list[int]]"
     ad_bf: int
-    ad_bf_para: Required[list[str]]
+    ad_bf_para: "Required[list[str]]"
     ad_alg: int
-    ad_alg_para: Required[list[str]]
+    ad_alg_para: "Required[list[str]]"
     config_n: str
     config_sys: str
     monitor: int
@@ -92,18 +93,18 @@ class OptionalParaList(TypedDict, total=False):
     ext_ai: str
     ext_debug: str
     debug_lvl: int
-    alg: Required[list[str]]
-    alg_sign: Required[list[str]]
+    alg: "Required[list[str]]"
+    alg_sign: "Required[list[str]]"
     backfill: int
-    bf_para: Required[list[str]]
+    bf_para: "Required[list[str]]"
     win: int
-    win_para: Required[list[str]]
+    win_para: "Required[list[int]]"
     ad_win: int
-    ad_win_para: Required[list[str]]
+    ad_win_para: "Required[list[int]]"
     ad_bf: int
-    ad_bf_para: Required[list[str]]
+    ad_bf_para: "Required[list[str]]"
     ad_alg: int
-    ad_alg_para: Required[list[str]]
+    ad_alg_para: "Required[list[str]]"
     config_n: str
     config_sys: str
     monitor: int
@@ -169,7 +170,7 @@ def cqsim_main(para_list: ParaList):
     module_filter_job.feed_job_trace()
     # module_filter_job.read_job_trace()
     # module_filter_job.output_job_data()
-    module_filter_job.output_job_config()
+    module_filter_job.dump_config()
 
     # Node Filter
     print(".................... Node Filter")
@@ -179,7 +180,7 @@ def cqsim_main(para_list: ParaList):
     module_filter_node = NodeFilterSWF(
         struc=struc_name, save=save_name_n, config=config_name_n, debug=module_debug
     )
-    module_filter_node.read_node_struc()
+    module_filter_node.read_node_structure()
     module_filter_node.dump_node_list()
     module_filter_node.dump_config()
 
@@ -193,8 +194,7 @@ def cqsim_main(para_list: ParaList):
         read_input_freq=para_list["read_input_freq"],
         debug=module_debug,
     )
-    module_job_trace.initial_import_job_file(save_name_j)
-    # module_job_trace.import_job_file(save_name_j)
+    module_job_trace.import_job_file(save_name_j)
     module_job_trace.import_job_config(config_name_j)
 
     # Node Structure

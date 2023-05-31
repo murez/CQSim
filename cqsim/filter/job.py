@@ -1,12 +1,22 @@
+from dataclasses import dataclass
 from typing import Optional
 
-from cqsim.cqsim.job_trace import JobTraceInfo
+from cqsim.cqsim.job_trace import Job
 from cqsim.IOModule.debug import DebugLog
 from cqsim.types import Time
 
 
+@dataclass
+class ConfigData:
+    date: str  # TODO: datetime
+    start_offset: Time
+
+
 class JobFilter:
-    jobList: list[JobTraceInfo]
+    job_list: list[Job]
+    start: Optional[Time]
+    config_data: Optional[ConfigData]
+    anchor: int
 
     def __init__(
         self,
@@ -14,7 +24,7 @@ class JobFilter:
         save: str,
         config: str,
         sdate: Optional[Time] = None,
-        start: Time = -1,
+        start: Optional[Time] = None,
         density=1.0,
         anchor=0,
         rnum=0,
@@ -31,7 +41,7 @@ class JobFilter:
         self.config = str(config)
         self.debug = debug
         self.jobNum = -1
-        self.jobList = []
+        self.job_list = []
 
         if self.debug:
             self.debug.line(4, " ")
@@ -39,7 +49,7 @@ class JobFilter:
             self.debug.debug("# " + self.display_name, 1)
             self.debug.line(4, "#")
 
-        self.reset_config_data()
+        self.reset_config()
 
     def reset(
         self,
@@ -74,28 +84,24 @@ class JobFilter:
         if debug:
             self.debug = debug
         self.jobNum = -1
-        self.jobList = []
+        self.job_list = []
 
-        self.reset_config_data()
+        self.reset_config()
 
-    def reset_config_data(self):
+    def reset_config(self):
         if self.debug:
             self.debug.debug("* " + self.display_name + " -- reset_config_data", 5)
-        self.config_start = ";"
-        self.config_sep = "\\n"
-        self.config_equal = ": "
-        self.config_data = []
-        # self.config_data.append({'name_config':'date','name':'StartTime','value':''})
+        self.config_data = None
 
     def read_job_trace(self):
         if self.debug:
             self.debug.debug("* " + self.display_name + " -- read_job_trace", 5)
-        return
+        raise NotImplementedError
 
-    def input_check(self, jobInfo: JobTraceInfo):
+    def input_check(self, job: Job):
         if self.debug:
             self.debug.debug("* " + self.display_name + " -- input_check", 5)
-        return
+        raise NotImplementedError
 
     def get_job_num(self):
         if self.debug:
@@ -105,20 +111,20 @@ class JobFilter:
     def get_job_data(self):
         if self.debug:
             self.debug.debug("* " + self.display_name + " -- get_job_data", 5)
-        return self.jobList
+        return self.job_list
 
-    def output_job_data(self):
+    def dump_job_list(self):
         if self.debug:
             self.debug.debug("* " + self.display_name + " -- output_job_data", 5)
         if not self.save:
             print("Save file not set!")
             return
-        return
+        raise NotImplementedError
 
-    def output_job_config(self):
+    def dump_config(self):
         if self.debug:
             self.debug.debug("* " + self.display_name + " -- output_job_config", 5)
         if not self.config:
             print("Config file not set!")
             return
-        return
+        raise NotImplementedError

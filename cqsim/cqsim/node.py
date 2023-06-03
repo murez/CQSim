@@ -1,20 +1,21 @@
 import bisect
-import dataclasses
 import itertools
 import json
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Callable, Optional
 
 import pandas as pd
+from typing_extensions import reveal_type
 
 from cqsim.logging.debug import DebugLog
 from cqsim.types import StrOrBytesPath, Time
+from cqsim.utils import dataclass_types_for_pandas
 
 
 @dataclass
 class JobInfo:
     job: int
-    node: int
+    cores: int
     end: Time
 
 
@@ -40,11 +41,11 @@ class NodeStructure:
     id: int
     location: list[int]
     group: int
-    # index to the assigned job, or -1 if not assigned
-    state: int
     proc: int
-    start: Time
-    end: Time
+    # index to the assigned job, or None if not assigned
+    state: Optional[int] = None
+    start: Optional[Time] = None
+    end: Optional[Time] = None
     extend: Optional[dict] = None
 
 
@@ -59,12 +60,12 @@ class Node:
     nodes: list[NodeStructure]
     jobs: list[JobInfo]
     predict_nodes: list[PredictNode]
-    predict_job: list[PredictJob]
+    predict_jobs: list[PredictJob]
 
     # Count of processors
-    total: int
-    idle_cores: int
-    available_cores: int
+    total_cores: Optional[int] = None
+    idle_cores: Optional[int] = None
+    available_cores: Optional[int] = None
 
     def __init__(self, debug: DebugLog):
         self.display_name = "Node Structure"
@@ -72,10 +73,10 @@ class Node:
         self.nodes = []
         self.jobs = []
         self.predict_nodes = []
-        self.predict_job = []
-        self.total = -1
-        self.idle_cores = -1
-        self.available_cores = -1
+        self.predict_jobs = []
+        self.total_cores = None
+        self.idle_cores = None
+        self.available_cores = None
 
         self.debug.line(4, " ")
         self.debug.line(4, "#")
@@ -88,9 +89,9 @@ class Node:
         self.nodes = []
         self.jobs = []
         self.predict_nodes = []
-        self.total = -1
-        self.idle_cores = -1
-        self.available_cores = -1
+        self.total_cores = None
+        self.idle_cores = None
+        self.available_cores = None
 
     def read_list(self, source_str: str):
         assert source_str[0] == "[" and source_str[-1] == "]"
@@ -102,9 +103,10 @@ class Node:
         # self.debug.debug("* "+self.display_name+" -- import_node_file",5)
         self.nodes = []
 
-        field_types = {
-            field.name: field.type for field in dataclasses.fields(NodeStructure)
-        } | {"location": "str", "extend": "str"}
+        field_types = dataclass_types_for_pandas(NodeStructure) | {
+            "location": str,
+            "extend": str,
+        }
         df = pd.read_csv(
             node_file,
             dtype=field_types,
@@ -114,14 +116,14 @@ class Node:
         df["extend"] = pd.NA
 
         for index, row in df.iterrows():
-            self.nodes.append(NodeStructure(**row.to_dict()))
-        self.total = len(self.nodes)
-        self.idle_cores = self.total
-        self.available_cores = self.total
+            self.nodes.append(NodeStructure(*row.to_dict()))
+        self.total_cores = len(self.nodes)
+        self.idle_cores = self.total_cores
+        self.available_cores = self.total_cores
 
         self.debug.debug(
             "  Tot:"
-            + str(self.total)
+            + str(self.total_cores)
             + " Idle:"
             + str(self.idle_cores)
             + " Avail:"
@@ -150,46 +152,61 @@ class Node:
                 group=temp_dataList[2],
                 state=temp_dataList[3],
                 proc=temp_dataList[4],
-                start=-1,
-                end=-1,
+                start=None,
+                end=None,
                 extend=None,
             )
             self.nodes.append(tempInfo)
             i += 1
-        self.total = len(self.nodes)
-        self.idle_cores = self.total
-        self.available_cores = self.total
+        self.total_cores = len(self.nodes)
+        self.idle_cores = self.total_cores
+        self.available_cores = self.total_cores
 
     def is_available(self, cores: int):
         # self.debug.debug("* "+self.display_name+" -- is_available",6)
+        if self.available_cores is None:
+            self.debug.debug("  Error: Node is not initialized", 0)
+            return False
         return self.available_cores >= cores
 
     def get_tot(self):
         # self.debug.debug("* "+self.display_name+" -- get_tot",6)
-        return self.total
+        assert self.total_cores is not None
+        return self.total_cores
 
     def get_idle(self):
         # self.debug.debug("* "+self.display_name+" -- get_idle",6)
+        assert self.idle_cores is not None
         return self.idle_cores
 
     def get_avail(self):
         # self.debug.debug("* "+self.display_name+" -- get_avail",6)
+        assert self.available_cores is not None
         return self.available_cores
 
     def node_allocate(self, cores: int, job_index: int, start: Time, end: Time):
+        assert self.idle_cores is not None
+
         # self.debug.debug("* "+self.display_name+" -- node_allocate",5)
         if not self.is_available(cores):
             return False
 
         # NOTE: this does not exists in NodeSWF
-        for node in itertools.islice(filter(lambda x: x.state < 0, self.nodes), cores):
+        assert all(node.state is not None for node in self.nodes)
+        for node in itertools.islice(
+            filter(
+                lambda x: x.state < 0,  # type: ignore ensured all states are not None
+                self.nodes,
+            ),
+            cores,
+        ):
             node.state = job_index
             node.start = start
             node.end = end
 
         self.idle_cores -= cores
         self.available_cores = self.idle_cores
-        job = JobInfo(job=job_index, end=end, node=cores)
+        job = JobInfo(job=job_index, end=end, cores=cores)
         bisect.insort(self.jobs, job, key=lambda x: x.end)
 
         self.debug.debug(
@@ -211,20 +228,22 @@ class Node:
         released_cores = 0
         for core in filter(lambda x: x.state == job_index, self.nodes):
             # self.debug.debug("  xxx: "+str(node['state'])+"   "+str(job_index),4)
-            core.state = -1
-            core.start = -1
-            core.end = -1
+            core.state = None
+            core.start = None
+            core.end = None
             released_cores += 1
         if released_cores == 0:
             self.debug.debug("  Release Fail!", 4)
             return False
+
+        assert self.idle_cores is not None
         self.idle_cores += released_cores
         self.available_cores = self.idle_cores
 
         for index, job in enumerate(self.jobs):
             if job.job == job_index:
                 job = self.jobs.pop(index)
-                self.idle_cores += job.node
+                self.idle_cores += job.cores
                 self.available_cores = self.idle_cores
                 break
         else:
@@ -253,7 +272,8 @@ class Node:
         if not end or end < start:
             end = start
 
-        nodes_between = filter(lambda x: start <= x.time < end, self.predict_nodes)
+        between_time: Callable[[PredictNode], bool] = lambda x: start <= x.time < end
+        nodes_between = filter(between_time, self.predict_nodes)
         return all(node.avail >= cores for node in nodes_between)
 
     def reserve(
@@ -264,6 +284,8 @@ class Node:
         start: Optional[Time] = None,
         index: Optional[int] = None,
     ):
+        assert self.total_cores is not None
+
         if index is None:  # in old code this means index == -1
             index = 0
         if index not in range(len(self.predict_nodes)):
@@ -290,7 +312,7 @@ class Node:
         start_index = index
         for i, node in enumerate(self.predict_nodes, start=index):
             if node.time < end:
-                assert len(node.node) == self.total
+                assert len(node.node) == self.total_cores
                 assigned_cores = 0
                 for k, n in enumerate(node.node):
                     if assigned_cores >= cores:
@@ -309,7 +331,7 @@ class Node:
                 # And the last node must satisfy the condition
                 assert last_node.time < end
 
-                assert len(last_node.node) == self.total
+                assert len(last_node.node) == self.total_cores
                 self.predict_nodes.insert(
                     i,
                     PredictNode(
@@ -338,41 +360,47 @@ class Node:
             self.predict_nodes.append(
                 PredictNode(
                     time=end,
-                    node=[-1] * self.total,
-                    idle=self.total,
-                    avail=self.total,
+                    node=[-1] * self.total_cores,
+                    idle=self.total_cores,
+                    avail=self.total_cores,
                 )
             )
 
-        self.predict_job.append(PredictJob(job=job_index, start=start, end=end))
+        self.predict_jobs.append(PredictJob(job=job_index, start=start, end=end))
         return start_index
 
-    def predict_delete(self, proc_num, job_index):
+    def predict_delete(self, cores: int, job_index: int):
         # self.debug.debug("* "+self.display_name+" -- pre_delete",5)
         raise NotImplementedError
 
-    def predict_modify(self, proc_num, start, end, job_index):
+    def predict_modify(self, cores: int, start: Time, end: Time, job_index: int):
         # self.debug.debug("* "+self.display_name+" -- pre_modify",5)
         raise NotImplementedError
 
     def predict_last_start(self):
-        return max(job.start for job in self.predict_job)
+        if len(self.predict_jobs) == 0:
+            return None
+        return max(job.start for job in self.predict_jobs)
 
-    def predict_last_end(self):
-        return max(job.end for job in self.predict_job)
+    def predict_last_ended(self):
+        if len(self.predict_jobs) == 0:
+            return None
+        return max(job.end for job in self.predict_jobs)
 
     def predict_reset(self, time: Time):
         # self.debug.debug("* "+self.display_name+" -- pre_reset",5)
-        assert len(self.nodes) == self.total
+        assert len(self.nodes) == self.total_cores
+        assert self.idle_cores is not None and self.available_cores is not None
+        assert all(x.state is not None for x in self.nodes)
 
         node = PredictNode(
             time=time,
-            node=[x.state for x in self.nodes],
+            node=[x.state for x in self.nodes],  # type: ignore ensured all states are not None
             idle=self.idle_cores,
             avail=self.available_cores,
         )
         self.predict_nodes = [node]
-        self.predict_job = []
+        self.predict_jobs = []
         self.predict_nodes.append(node)
 
         for i, job in enumerate(self.jobs):

@@ -128,8 +128,8 @@ class Backfill:
     def backfill_cons(self):
         # self.debug.debug("* "+self.display_name+" -- backfill_cons",5)
         backfill_list = []
-        assert isinstance(self.backfill_parameter, dict)
-        self.node.predict_reset(self.backfill_parameter["time"])
+        assert self.backfill_parameter is not None
+        self.node.predict_reset(self.backfill_parameter.time)
         self.node.reserve(
             self.wait_job[0].proc, self.wait_job[0].index, self.wait_job[0].run
         )
@@ -137,8 +137,8 @@ class Backfill:
         for job in self.wait_job[1:]:
             backfill_test = self.node.predict_avail(
                 job.proc,
-                self.backfill_parameter["time"],
-                self.backfill_parameter["time"] + job.run,
+                self.backfill_parameter.time,
+                self.backfill_parameter.time + job.run,
             )
             if backfill_test:
                 backfill_list.append(job.index)

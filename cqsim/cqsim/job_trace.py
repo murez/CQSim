@@ -1,6 +1,7 @@
-import dataclasses
 import json
-from typing import Optional, TypedDict
+from dataclasses import dataclass
+from enum import Enum
+from typing import Optional
 
 import pandas as pd
 
@@ -10,33 +11,42 @@ from cqsim.extend.swf.format import SWFLoader
 from cqsim.filter.job import ConfigData
 from cqsim.logging.debug import DebugLog
 from cqsim.types import Time
+from cqsim.utils import dataclass_types_for_pandas
 
 
-class JobTraceInfo(TypedDict):
+class JobState(Enum):
+    NONE = 0
+    SUBMIT = 1
+    START = 2
+    FINISH = 3
+
+
+@dataclass
+class JobTraceInfo:
     id: int
-    submit: float
-    wait: float
-    run: float
-    usedProc: int
-    usedAveCPU: float
-    usedMem: float
-    reqProc: int
-    reqTime: float
-    reqMem: float
+    submit_time: float
+    wait_time: float
+    run_time: float
+    allocated_processors: int
+    average_cpu_time: float
+    used_memory: float
+    requested_number_processors: int
+    requested_time: float
+    requested_memory: float
     status: int
-    userID: int
-    groupID: int
-    num_exe: int
-    num_queue: int
-    num_part: int
-    num_pre: int
-    thinkTime: int
-    start: int  # -1
-    end: int  # -1
-    score: float  # 0
-    state: int  # 0
-    happy: int  # -1
-    estStart: int  # -1
+    user_id: int
+    group_id: int
+    executable_number: int
+    queue_number: int
+    partition_number: int
+    previous_job_id: int
+    think_time_from_previous_job: int
+    start_time: Time = -1
+    end_time: Time = -1
+    score: float = 0
+    state: JobState = JobState.NONE
+    happy: int = -1
+    estimated_start_time: Optional[Time] = None
 
 
 class JobTrace:
@@ -107,7 +117,7 @@ class JobTrace:
 
     def reset_data(self):
         # self.debug.debug("* "+self.display_name+" -- reset_data",5)
-        self.job_wait_size = 0
+        self.job_wait_cores = 0
         self.submit_indices = []
         self.wait_indices = []
         self.run_indices = []
@@ -117,7 +127,10 @@ class JobTrace:
     # TODO: read file is still a mess
 
     def import_job_file(self, job_file: str):
-        field_types = {field.name: field.type for field in dataclasses.fields(Job)}
+        # find type for dataframe importing
+        field_types = dataclass_types_for_pandas(Job)
+
+        # read job file
         df = pd.read_csv(
             job_file,
             dtype=field_types,
@@ -126,18 +139,11 @@ class JobTrace:
 
         # set job list
         for index, row in df.iterrows():
-            self.traces[len(self.traces)] = JobTraceInfo(
-                start=-1,
-                end=-1,
-                score=0,
-                state=0,
-                happy=-1,
-                estStart=-1,
-                **row.to_dict()
-            )
+            self.traces[len(self.traces)] = JobTraceInfo(**row.to_dict())
+            self.submit_indices.append(len(self.traces) - 1)
 
     # XREF: JobFilterSWF.output_job_config()
-    def import_job_config(self, config_file):
+    def import_job_config(self, config_file: str):
         with open(config_file, "r") as f:
             config_data = ConfigData(**json.load(f))
 
@@ -164,18 +170,18 @@ class JobTrace:
 
     def wait_size(self):
         # self.debug.debug("* "+self.display_name+" -- wait_size",6)
-        return self.job_wait_size
+        return self.job_wait_cores
 
     def refresh_score(self, scores: list[float]):
         # self.debug.debug("* "+self.display_name+" -- refresh_score",5)
         for index, score in zip(self.wait_indices, scores):
-            self.traces[index]["score"] = score
-        self.wait_indices.sort(key=lambda x: self.traces[x]["score"], reverse=True)
+            self.traces[index].score = score
+        self.wait_indices.sort(key=lambda x: self.traces[x].score, reverse=True)
 
     def job_infos(self):
         return self.traces
 
-    def job_info(self, job_index):
+    def job_info(self, job_index: int):
         # self.debug.debug("* "+self.display_name+" -- job_info",6)
         assert job_index >= 0
         return self.traces[job_index]
@@ -183,17 +189,18 @@ class JobTrace:
     def job_info_len(self):
         return len(self.traces) + self.num_delete_jobs
 
-    def job_submit(self, job_index: int, job_score: int = 0, job_est_start: int = -1):
+    def job_submit(
+        self, job_index: int, job_score: int = 0, job_est_start: Optional[Time] = None
+    ):
         # self.debug.debug("* "+self.display_name+" -- job_submit",5)
-        self.traces[job_index]["state"] = 1
-        self.traces[job_index]["score"] = job_score
-        self.traces[job_index]["estStart"] = job_est_start
+        self.traces[job_index].state = JobState.SUBMIT
+        self.traces[job_index].score = job_score
+        self.traces[job_index].estimated_start_time = job_est_start
         self.submit_indices.remove(job_index)
         self.wait_indices.append(job_index)
-        self.job_wait_size += self.traces[job_index]["reqProc"]
-        return 1
+        self.job_wait_cores += self.traces[job_index].requested_number_processors
 
-    def job_start(self, job_index, time):
+    def job_start(self, job_index: int, time: Time):
         # self.debug.debug("* "+self.display_name+" -- job_start",5)
         self.debug.debug(
             " "
@@ -201,22 +208,21 @@ class JobTrace:
             + str(job_index)
             + "]"
             + " Req:"
-            + str(self.traces[job_index]["reqProc"])
+            + str(self.traces[job_index].requested_number_processors)
             + " Run:"
-            + str(self.traces[job_index]["run"])
+            + str(self.traces[job_index].run_time)
             + " ",
             4,
         )
-        self.traces[job_index]["state"] = 2
-        self.traces[job_index]["start"] = time
-        self.traces[job_index]["wait"] = time - self.traces[job_index]["submit"]
-        self.traces[job_index]["end"] = time + self.traces[job_index]["run"]
+        self.traces[job_index].state = JobState.START
+        self.traces[job_index].start_time = time
+        self.traces[job_index].wait_time = time - self.traces[job_index].submit_time
+        self.traces[job_index].end_time = time + self.traces[job_index].run_time
         self.wait_indices.remove(job_index)
         self.run_indices.append(job_index)
-        self.job_wait_size -= self.traces[job_index]["reqProc"]
-        return 1
+        self.job_wait_cores -= self.traces[job_index].requested_number_processors
 
-    def job_finish(self, job_index, time=None):
+    def job_finish(self, job_index: int, time: Optional[Time] = None):
         # self.debug.debug("* "+self.display_name+" -- job_finish",5)
         self.debug.debug(
             " "
@@ -224,23 +230,23 @@ class JobTrace:
             + str(job_index)
             + "]"
             + " Req:"
-            + str(self.traces[job_index]["reqProc"])
+            + str(self.traces[job_index].requested_number_processors)
             + " Run:"
-            + str(self.traces[job_index]["run"])
+            + str(self.traces[job_index].run_time)
             + " ",
             4,
         )
-        self.traces[job_index]["state"] = 3
+        self.traces[job_index].state = JobState.FINISH
         if time:
-            self.traces[job_index]["end"] = time
+            self.traces[job_index].end_time = time
         self.run_indices.remove(job_index)
         # self.job_done_list.append(job_index)
         return 1
 
-    def job_set_score(self, job_index, job_score):
-        self.traces[job_index]["score"] = job_score
+    def job_set_score(self, job_index: int, job_score: float):
+        self.traces[job_index].score = job_score
 
-    def remove_job_from_dict(self, job_index):
+    def remove_job_from_dict(self, job_index: int):
         # TODO: so it must be a dict right?
         self.num_delete_jobs += 1
         return self.traces.pop(job_index)

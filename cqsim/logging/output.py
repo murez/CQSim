@@ -120,57 +120,23 @@ class OutputLog:
             for temp_job in self.job_buf:
                 # temp_job = job_module.job_info(job_index)
                 context = ""
-                context += str(temp_job["id"])
+                context += str(temp_job.id)
                 context += sep_sign
-                context += str(temp_job["reqProc"])
+                context += str(temp_job.requested_number_processors)
                 context += sep_sign
-                context += str(temp_job["reqProc"])
+                context += str(temp_job.requested_number_processors)
                 context += sep_sign
-                context += str(temp_job["reqTime"])
+                context += str(temp_job.requested_time)
                 context += sep_sign
-                context += str(temp_job["run"])
+                context += str(temp_job.run_time)
                 context += sep_sign
-                context += str(temp_job["wait"])
+                context += str(temp_job.wait_time)
                 context += sep_sign
-                context += str(temp_job["submit"])
+                context += str(temp_job.submit_time)
                 context += sep_sign
-                context += str(temp_job["start"])
+                context += str(temp_job.start_time)
                 context += sep_sign
-                context += str(temp_job["end"])
+                context += str(temp_job.end_time)
                 self.job_result.log_print(context, 1)
             self.job_result.file_close()
             self.job_buf = []
-
-    """
-    def print_result(self, job_module):
-        sep_sign=";"
-        context = ""
-        self.job_result.file_open()
-        i = 0
-        done_list = job_module.done_list()
-        job_num = len(done_list)
-        while (i<job_num):
-            temp_job = job_module.job_info(i)
-            context = ""
-            context += str(temp_job['id'])
-            context += sep_sign
-            context += str(temp_job['reqProc'])
-            context += sep_sign
-            context += str(temp_job['reqProc'])
-            context += sep_sign
-            context += str(temp_job['reqTime'])
-            context += sep_sign
-            context += str(temp_job['run'])
-            context += sep_sign
-            context += str(temp_job['wait'])
-            context += sep_sign
-            context += str(temp_job['submit'])
-            context += sep_sign
-            context += str(temp_job['start'])
-            context += sep_sign
-            context += str(temp_job['end'])
-            self.job_result.log_print(context,1)
-
-            i += 1
-        self.job_result.file_close()
-        """

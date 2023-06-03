@@ -47,7 +47,6 @@ class NodeFilter:
         self.save = str(save)
         self.config = str(config)
         self.debug = debug
-        self.node_num = -1
         self.node_list = []
 
         self.debug.line(4, " ")
@@ -73,7 +72,6 @@ class NodeFilter:
             self.config = str(config)
         if debug:
             self.debug = debug
-        self.node_num = -1
         self.node_list = []
 
         self.reset_config()
@@ -85,13 +83,6 @@ class NodeFilter:
 
     def read_node_structure(self):
         raise NotImplementedError
-
-    def input_check(self, nodeInfo):
-        raise NotImplementedError
-
-    def get_node_num(self):
-        self.debug.debug("* " + self.display_name + " -- get_node_num", 6)
-        return self.node_num
 
     def get_node_data(self):
         self.debug.debug("* " + self.display_name + " -- get_node_data", 5)

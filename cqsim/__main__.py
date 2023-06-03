@@ -5,6 +5,7 @@ import re
 import sys
 import time
 from datetime import datetime
+from typing import Any
 
 from cqsim import cqsim_main, cqsim_path
 
@@ -38,7 +39,7 @@ class Option(optparse.Option):
         "%Y%m%d",
     ]
 
-    def check_date(self, opt, value):
+    def check_date(self, opt: str, value: str):
         """Parse a datetime from a variety of string formats."""
         for format in self.DATE_FORMATS:
             try:
@@ -62,37 +63,45 @@ class Option(optparse.Option):
     TYPE_CHECKER["date"] = check_date
 
 
-def callback_alg(option, opt_str, value: str, parser):
+def alg_sign_check(alg_sign_t: str, leng: int):
+    alg_sign_result = [
+        int(alg_sign_t[i]) if i < len(alg_sign_t) else 0 for i in range(leng)
+    ]
+    return alg_sign_result
+
+
+def callback_alg(option: str, opt_str: str, value: str, parser: Any):
     default_opt["alg"].append(value)
     return
 
 
-def callback_alg_sign(option, opt_str, value: str, parser):
-    default_opt["alg_sign"].append(value)
+def callback_alg_sign(option: str, opt_str: str, value: str, parser: Any):
+    # TODO: current implementation does not allow we to split str type and int type
+    default_opt["alg_sign"].append(value)  # type: ignore
     return
 
 
-def callback_bf_para(option, opt_str, value: str, parser):
+def callback_bf_para(option: str, opt_str: str, value: str, parser: Any):
     default_opt["bf_para"].append(value)
     return
 
 
-def callback_win_para(option, opt_str, value: str, parser):
-    default_opt["win_para"].append(value)
+def callback_win_para(option: str, opt_str: str, value: str, parser: Any):
+    default_opt["win_para"].append(int(value))
     return
 
 
-def callback_ad_win_para(option, opt_str, value: str, parser):
-    default_opt["ad_win_para"].append(value)
+def callback_ad_win_para(option: str, opt_str: str, value: str, parser: Any):
+    default_opt["ad_win_para"].append(int(value))
     return
 
 
-def callback_ad_bf_para(option, opt_str, value: str, parser):
+def callback_ad_bf_para(option: str, opt_str: str, value: str, parser: Any):
     default_opt["ad_bf_para"].append(value)
     return
 
 
-def callback_ad_alg_para(option, opt_str, value: str, parser):
+def callback_ad_alg_para(option: str, opt_str: str, value: str, parser: Any):
     default_opt["ad_alg_para"].append(value)
     return
 
@@ -101,21 +110,7 @@ def path_without_extension(file_name: str):
     return os.path.splitext(file_name)[0]
 
 
-def alg_sign_check(alg_sign_t, leng):
-    alg_sign_result = []
-    temp_len = len(alg_sign_t)
-    i = 0
-    while i < leng:
-        if i < temp_len:
-            alg_sign_result.append(int(alg_sign_t[i]))
-        else:
-            # alg_sign_result.append(int(alg_sign_t[temp_len-1]))
-            alg_sign_result.append(0)
-        i += 1
-    return alg_sign_result
-
-
-def get_list(inputstring, regex):
+def get_list(inputstring: str, regex: str):
     return re.findall(regex, inputstring)
 
 
@@ -487,7 +482,10 @@ if __name__ == "__main__":
         ), f"Error: Please specify the {data_path}!"
         inputPara[data_path] = os.path.join(cqsim_path.path_data, inputPara[data_path])  # type: ignore
 
-    inputPara["alg_sign"] = alg_sign_check(inputPara["alg_sign"], len(inputPara["alg"]))
+    if isinstance(inputPara["alg_sign"], str):
+        inputPara["alg_sign"] = alg_sign_check(
+            inputPara["alg_sign"], len(inputPara["alg"])
+        )
 
     if inputPara.get("job_trace") is None:
         inputPara["resource_job"] = 1

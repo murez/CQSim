@@ -7,9 +7,10 @@ from cqsim.types import Time
 
 class NodeSWF(Node):
     def node_allocate(self, cores: int, job_index: int, start: Time, end: Time):
-        # self.debug.debug("* "+self.display_name+" -- node_allocate",5)
+        assert self.idle_cores is not None
+
         if not self.is_available(cores):
-            return 0
+            return False
 
         self.idle_cores -= cores
         self.available_cores = self.idle_cores
@@ -18,7 +19,7 @@ class NodeSWF(Node):
         job_info = JobInfo(
             job=job_index,
             end=end,
-            node=cores,
+            cores=cores,
         )
         bisect.insort(self.jobs, job_info, key=lambda x: x.end)
 
@@ -34,22 +35,16 @@ class NodeSWF(Node):
             + " ",
             4,
         )
-        return 1
+        return True
 
     def node_release(self, job_index: int, end: Time):
-        # self.debug.debug("* "+self.display_name+" -- node_release",5)
-        """
-        self.debug.line(2,"...")
-        for job in self.job_list:
-            self.debug.debug(job['job'],2)
-        self.debug.line(2,"...")
-        """
+        assert self.idle_cores is not None
 
         # find matching job in jobs list
         for index, job in enumerate(self.jobs):
             if job.job == job_index:
                 job = self.jobs.pop(index)
-                self.idle_cores += job.node
+                self.idle_cores += job.cores
                 self.available_cores = self.idle_cores
                 break
         else:
@@ -67,7 +62,6 @@ class NodeSWF(Node):
             + " ",
             4,
         )
-        return True
 
     def reserve(
         self,
@@ -77,7 +71,9 @@ class NodeSWF(Node):
         start: Optional[Time] = None,
         index: Optional[int] = None,
     ):
-        # self.debug.debug("* "+self.display_name+" -- reserve",5)
+        assert self.idle_cores is not None
+        assert self.total_cores is not None
+
         if index is None:
             index = 0
         if index not in range(len(self.predict_nodes)):
@@ -95,6 +91,9 @@ class NodeSWF(Node):
                         break
                 else:  # cores > node.avali
                     index += 1
+            else:
+                assert index >= len(self.predict_nodes)
+                return None
         elif not self.predict_avail(cores, start, start + time):
             return None
 
@@ -124,21 +123,26 @@ class NodeSWF(Node):
                 break
         else:
             self.predict_nodes.append(
-                PredictNode(time=end, idle=self.total, avail=self.total)
+                PredictNode(time=end, idle=self.total_cores, avail=self.total_cores)
             )
             reserve_index = len(self.predict_nodes) - 1
 
-        self.predict_job.append(PredictJob(job=job_index, start=start, end=end))
+        self.predict_jobs.append(PredictJob(job=job_index, start=start, end=end))
         return reserve_index
 
     def predict_reset(self, time: Time) -> None:
-        # self.debug.debug("* "+self.display_name+" -- pre_reset",5)
+        assert self.idle_cores is not None
+        assert self.available_cores is not None
+
         node = PredictNode(time=time, idle=self.idle_cores, avail=self.available_cores)
         self.predict_nodes = [node]
-        self.predict_job = []
+        self.predict_jobs = []
 
         for i, job in enumerate(self.jobs):
-            if node.time != job.end or i == 0:
+            if job.end != node.time or i == 0:
+                if i != 0:
+                    assert job.end > node.time
+                # a copy of current node with the new time
                 node = PredictNode(
                     time=job.end,
                     idle=node.idle,
@@ -146,8 +150,8 @@ class NodeSWF(Node):
                 )
                 self.predict_nodes.append(node)
 
-            assert node.time == job.end
-            node.idle += job.node
+            assert job.end == node.time
+            node.idle += job.cores
             node.avail = self.predict_nodes[-1].idle
 
     def find_res_place(self, cores: int, index: int, time: Time):

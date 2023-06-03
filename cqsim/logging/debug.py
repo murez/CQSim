@@ -9,7 +9,11 @@ class DebugLog:
     DebugLog_buf: list[object]
 
     def __init__(
-        self, lvl=2, show=2, path: Optional[StrOrBytesPath] = None, log_freq=1
+        self,
+        lvl: int = 2,
+        show: int = 2,
+        path: Optional[StrOrBytesPath] = None,
+        log_freq: int = 1,
     ):
         self.display_name = "Debug"
         self.lvl = lvl
@@ -24,7 +28,7 @@ class DebugLog:
         self,
         lvl: Optional[int] = None,
         path: Optional[StrOrBytesPath] = None,
-        log_freq=1,
+        log_freq: int = 1,
     ):
         if lvl:
             self.lvl = lvl
@@ -36,16 +40,18 @@ class DebugLog:
         self.reset_log()
 
     def reset_log(self):
+        """
+        Clear the log file.
+        """
         self.debugFile.reset(self.path, "w")
         self.debugFile.file_open()
         self.debugFile.file_close()
         self.debugFile.reset(self.path, "a")
-        return 1
 
-    def set_lvl(self, lvl=0):
+    def set_lvl(self, lvl: int = 0):
         self.lvl = lvl
 
-    def debug(self, context: Optional[object] = None, lvl=3):
+    def debug(self, context: Optional[object] = None, lvl: int = 3):
         if lvl <= self.lvl:
             if context != None:
                 self.DebugLog_buf.append(context)
@@ -61,7 +67,7 @@ class DebugLog:
                 print(context)
                 # pass
 
-    def line(self, lvl=1, signal="-", num=15):
+    def line(self, lvl: int = 1, signal: str = "-", num: int = 15):
         if lvl <= self.lvl:
             i = 0
             context = ""
@@ -77,24 +83,3 @@ class DebugLog:
                 self.DebugLog_buf = []
             if lvl >= self.show:
                 print(context)
-        """
-        if (lvl<=self.lvl):
-            self.debugFile.file_open()
-            i = 0
-            context = ""
-            while (i<num):
-                context += signal
-                i += 1
-            self.debugFile.log_print(context,1)
-            if (lvl>=self.show):
-                print context
-            self.debugFile.file_close()
-        """
-
-    """
-    def start_debug(self):
-        self.debugFile.file_open()
-
-    def end_debug(self):
-        self.debugFile.file_close()
-    """

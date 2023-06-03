@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import os
+from pprint import pprint
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
@@ -10,7 +13,7 @@ from cqsim.cqsim.basic_algorithm import BasicAlgorithm
 from cqsim.cqsim.cqsim import Cqsim, ModuleList
 from cqsim.cqsim.info_collect import InfoCollect
 from cqsim.cqsim.job_trace import JobTrace
-from cqsim.cqsim.window import StartWindow
+from cqsim.cqsim.window import StartWindow, StartWindowPara
 from cqsim.extend.swf.job_filter import JobFilterSWF
 from cqsim.extend.swf.node import NodeSWF
 from cqsim.extend.swf.node_filter import NodeFilterSWF
@@ -46,18 +49,18 @@ class ParaList(TypedDict):
     ext_ai: str
     ext_debug: str
     debug_lvl: int
-    alg: "Required[list[str]]"
-    alg_sign: "Required[list[str]]"
+    alg: Required[list[str]]
+    alg_sign: Required[list[int]]
     backfill: int
-    bf_para: "Required[list[str]]"
-    win: int
-    win_para: "Required[list[int]]"
+    bf_para: Required[list[str]]
+    win: bool
+    win_para: Required[list[int]]
     ad_win: int
-    ad_win_para: "Required[list[int]]"
+    ad_win_para: Required[list[int]]
     ad_bf: int
-    ad_bf_para: "Required[list[str]]"
+    ad_bf_para: Required[list[str]]
     ad_alg: int
-    ad_alg_para: "Required[list[str]]"
+    ad_alg_para: Required[list[str]]
     config_n: str
     config_sys: str
     monitor: int
@@ -93,18 +96,18 @@ class OptionalParaList(TypedDict, total=False):
     ext_ai: str
     ext_debug: str
     debug_lvl: int
-    alg: "Required[list[str]]"
-    alg_sign: "Required[list[str]]"
+    alg: Required[list[str]]
+    alg_sign: Required[list[int]]
     backfill: int
-    bf_para: "Required[list[str]]"
-    win: int
-    win_para: "Required[list[int]]"
+    bf_para: Required[list[str]]
+    win: bool
+    win_para: Required[list[int]]
     ad_win: int
-    ad_win_para: "Required[list[int]]"
+    ad_win_para: Required[list[int]]
     ad_bf: int
-    ad_bf_para: "Required[list[str]]"
+    ad_bf_para: Required[list[str]]
     ad_alg: int
-    ad_alg_para: "Required[list[str]]"
+    ad_alg_para: Required[list[str]]
     config_n: str
     config_sys: str
     monitor: int
@@ -113,10 +116,7 @@ class OptionalParaList(TypedDict, total=False):
 
 
 def cqsim_main(para_list: ParaList):
-    print("....................")
-    for item in para_list:
-        print(str(item) + ": " + str(para_list[item]))
-    print("....................")
+    pprint(para_list)
 
     trace_name = para_list["path_in"] + para_list["job_trace"]
     save_name_j = para_list["path_fmt"] + para_list["job_save"] + para_list["ext_fmt_j"]
@@ -157,7 +157,6 @@ def cqsim_main(para_list: ParaList):
     module_debug = DebugLog(
         lvl=para_list["debug_lvl"], show=2, path=debug_path, log_freq=log_freq_int
     )
-    # module_debug.start_debug()
 
     # Job Filter
     print(".................... Job Filter")
@@ -220,7 +219,7 @@ def cqsim_main(para_list: ParaList):
         ad_mode=0,
         node_module=module_node_struc,
         debug=module_debug,
-        para_list=para_list["win_para"],
+        para_list=StartWindowPara(*para_list["win_para"]),
         para_list_ad=para_list["ad_win_para"],
     )
 

@@ -1,14 +1,49 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional, TypedDict
+from enum import Enum
+from typing import NamedTuple, Optional, TypedDict
 
 from cqsim.types import EventCode, Time
 
 
-class Event(TypedDict):
-    type: int
+class EventType(Enum):
+    JOB = 1
+    MONITOR = 2
+    EXTEND = 3
+
+
+class EventState(Enum):
+    SUBMIT = 1
+    FINISH = 2
+
+
+class EventPara(NamedTuple):
+    state: EventState
+    job_index: int
+
+
+@dataclass(eq=True)
+class Event:
+    type: EventType
     time: Time
     prio: int
-    para: Optional[list[int]]
+    para: Optional[EventPara]
+
+    def _cmp_key(self):
+        return (self.time, -self.prio, self.para, self.type)
+
+    def __lt__(self, other: Event):
+        return self._cmp_key() < other._cmp_key()
+
+    def __le__(self, other: Event):
+        return self._cmp_key() <= other._cmp_key()
+
+    def __gt__(self, other: Event):
+        return self._cmp_key() > other._cmp_key()
+
+    def __ge__(self, other: Event):
+        return self._cmp_key() >= other._cmp_key()
 
 
 @dataclass

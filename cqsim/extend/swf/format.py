@@ -2,14 +2,10 @@
 The Standard Workload Format
 """
 
+from __future__ import annotations
 
 import io
-from typing import IO, TYPE_CHECKING, Optional
-
-import pandas as pd
-
-if TYPE_CHECKING:
-    from pandas._typing import FilePath, ReadCsvBuffer
+from typing import IO, Optional
 
 from cqsim.cqsim.types import Job
 
@@ -27,6 +23,7 @@ class SWFLoader:
     seperator = ";"
     header_or_comment_prefix = ";"
     header_key_seperator = ":"
+    last_header_indent: Optional[int]
 
     header_parse_done = False
     last_header_key: Optional[str] = None
@@ -72,6 +69,7 @@ class SWFLoader:
         self.headers = {}
         self.jobs = []
         self.remember_jobs = remember_jobs
+        self.last_header_indent = None
 
     def parse_job_line(self, line: str) -> Job:
         fields = line.split()
@@ -100,39 +98,49 @@ class SWFLoader:
         return job
 
     def parse_header(self, line: str) -> tuple[Optional[str], str]:
+        # lstrip to keep '\n' at the end
+        indent = len(line) - len(line.lstrip())
+        line = line.lstrip()
         splited = line.split(self.header_key_seperator, maxsplit=1)
+
         if len(splited) < 2:
-            return (None, splited[0])
-        # seperator found, it is a header
+            if self.last_header_key is None:
+                # a comment
+                self.header_parse_done = True
+                return (None, line)
+
+        if len(splited) < 2 or (
+            self.last_header_indent is not None and indent > self.last_header_indent
+        ):
+            # a continuation of last header
+            return (self.last_header_key, line)
+
         key, value = splited
-        key, value = key.strip(), value.strip()
-        self.headers[key] = value
-        return (key, value)
+        # seperator found, this maybe a header
+        key_stripped, value_stripped = key.strip(), value.lstrip()
+        self.last_header_key = key_stripped
+        self.last_header_indent = indent
+        return (key_stripped, value_stripped)
 
     def load_line(self, line: str):
         if line.startswith(self.header_or_comment_prefix):
             if self.header_parse_done:
                 # can only be comment
                 return
-            # trim the prefix and whitespace
-            line = line[1:].strip()
+            # remove the prefix, DO NOT STRIP because the indent is important
+            line = line[1:]
             # skip empty line
             if line == "":
                 self.last_header_key = None
                 return
 
             key, value = self.parse_header(line)
-            if key is None:
-                # seperator not found, if last_key is None, it is a comment
-                if self.last_header_key is None:
-                    self.header_parse_done = True
-                    return
-                # otherwise, it is a continuation of last header
+            if key is not None:
+                if key in self.headers:
+                    self.headers[key] += value
                 else:
-                    assert self.last_header_key in self.headers
-                    self.headers[self.last_header_key] += value
-            else:
-                self.headers[key] = value
+                    self.headers[key] = value
+
         else:  # not start with ;
             self.header_parse_done = True
             line = line.strip()
@@ -148,6 +156,7 @@ class SWFLoader:
 
 def load(stream: io.TextIOBase | str, header_only: bool = False, start_offset: int = 0):
     """Load a SWF file from a stream."""
+    lines: list[str] | io.TextIOBase
     if isinstance(stream, str):
         lines = stream.splitlines()
     elif isinstance(stream, io.TextIOBase):

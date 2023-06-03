@@ -8,6 +8,7 @@ from cqsim.extend import swf
 from cqsim.filter import JobFilter
 from cqsim.filter.job import ConfigData
 from cqsim.types import Time
+from cqsim.utils import dataclass_types_for_pandas
 
 
 class JobFilterSWF(JobFilter):
@@ -44,7 +45,7 @@ class JobFilterSWF(JobFilter):
         self.job_count = len(filtered_jobs)
 
     def read_job_trace(self):
-        field_types = {field.name: field.type for field in dataclasses.fields(Job)}
+        field_types = dataclass_types_for_pandas(Job)
         df = pd.read_csv(
             self.trace,
             dtype=field_types,

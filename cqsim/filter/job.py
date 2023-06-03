@@ -25,9 +25,9 @@ class JobFilter:
         config: str,
         sdate: Optional[Time] = None,
         start: Optional[Time] = None,
-        density=1.0,
-        anchor=0,
-        rnum=0,
+        density: float = 1.0,
+        anchor: int = 0,
+        rnum: int = 0,
         debug: Optional[DebugLog] = None,
     ):
         self.display_name = "Filter Job"
@@ -40,7 +40,6 @@ class JobFilter:
         self.save = str(save)
         self.config = str(config)
         self.debug = debug
-        self.jobNum = -1
         self.job_list = []
 
         if self.debug:
@@ -83,7 +82,6 @@ class JobFilter:
             self.config = str(config)
         if debug:
             self.debug = debug
-        self.jobNum = -1
         self.job_list = []
 
         self.reset_config()
@@ -102,11 +100,6 @@ class JobFilter:
         if self.debug:
             self.debug.debug("* " + self.display_name + " -- input_check", 5)
         raise NotImplementedError
-
-    def get_job_num(self):
-        if self.debug:
-            self.debug.debug("* " + self.display_name + " -- get_job_num", 6)
-        return self.jobNum
 
     def get_job_data(self):
         if self.debug:

@@ -16,7 +16,6 @@ class NodeFilterSWF(NodeFilter):
         with open(self.struc, "r") as f:
             structure = swf.load(f)
         self.build_node_list(structure.headers)
-        self.nodeNum = len(self.node_list)
 
         max_procs = int(structure.headers["MaxProcs"])
         max_nodes = int(structure.headers["MaxNodes"])

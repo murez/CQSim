@@ -24,7 +24,6 @@ class JobTraceInfo(TypedDict):
     num_part: int
     num_pre: int
     thinkTime: int
-    realRunTime: float
     start: int
     end: int
     score: int
@@ -162,7 +161,7 @@ class Job_trace:
                     "num_part": int(temp_dataList[15]),
                     "num_pre": int(temp_dataList[16]),
                     "thinkTime": int(temp_dataList[17]),
-                    "realRunTime": float(temp_dataList[18]),
+                    # "realRunTime": float(temp_dataList[18]),
                     "start": -1,
                     "end": -1,
                     "score": 0,
@@ -226,7 +225,7 @@ class Job_trace:
                     "num_part": int(temp_dataList[15]),
                     "num_pre": int(temp_dataList[16]),
                     "thinkTime": int(temp_dataList[17]),
-                    "realRunTime": int(temp_dataList[18]),
+                    # "realRunTime": int(temp_dataList[18]),
                     "start": -1,
                     "end": -1,
                     "score": 0,

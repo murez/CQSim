@@ -22,8 +22,8 @@ class Filter_job_SWF(Filter_job):
         # assert "df" in vars(self).keys()
         input_df = pd.DataFrame(self.jobList)
         # write to file
-        # just get the first 19 columns
-        save_df = input_df.iloc[:, :19]
+        # just get the first 18 columns
+        save_df = input_df.iloc[:, :18]
     
         save_df.to_csv(self.save, header=False, index=False, sep=";")
 
@@ -33,12 +33,8 @@ class Filter_job_SWF(Filter_job):
         # read job trace as csv and ignore ;
         df = pd.read_csv(self.trace, header=None, comment=";", sep="\s+")
         # set column name
-        
-        # if df col len is 18, then add a column
-        if len(df.columns) == 18:
-            df[18] = df[3]
 
-        df.columns = list(JobTraceInfo.__annotations__.keys())[:19]
+        df.columns = list(JobTraceInfo.__annotations__.keys())[:18]
         # other column used by cqsim
         default_extension_info = {
             "start": -1,
@@ -113,7 +109,6 @@ class Filter_job_SWF(Filter_job):
     def input_check(self, jobInfo):
         if int(jobInfo["run"]) > int(jobInfo["reqTime"]):
             jobInfo["run"] = jobInfo["reqTime"]
-            jobInfo["realRunTime"] = jobInfo["reqTime"]
         if int(jobInfo["id"]) <= 0:
             return -2
         if int(jobInfo["submit"]) < 0:
@@ -128,7 +123,7 @@ class Filter_job_SWF(Filter_job):
 
     def output_job_data(self):
         output_df = pd.DataFrame(self.jobList)
-        output_df = output_df.iloc[:, :19]
+        output_df = output_df.iloc[:, :18]
         output_df.to_csv(self.save, header=False, index=False, sep=";")
 
     def output_job_config(self):

@@ -355,14 +355,14 @@ class Cqsim_sim:
             self.module["job"].job_info(job_index)["reqProc"],
             job_index,
             self.currentTime,
-            self.currentTime + self.module["job"].job_info(job_index)["realRunTime"], # changed by murez
-            # self.currentTime + self.module["job"].job_info(job_index)["reqTime"],
+            # self.currentTime + self.module["job"].job_info(job_index)["realRunTime"], # changed by murez
+            self.currentTime + self.module["job"].job_info(job_index)["reqTime"],
         )
         self.module["job"].job_start(job_index, self.currentTime)
         self.insert_event(
             1,
-            self.currentTime + self.module["job"].job_info(job_index)["realRunTime"], # changed by murez
-            # self.currentTime + self.module["job"].job_info(job_index)["run"],
+            # self.currentTime + self.module["job"].job_info(job_index)["realRunTime"], # changed by murez
+            self.currentTime + self.module["job"].job_info(job_index)["run"],
             1,
             [2, job_index],
         )

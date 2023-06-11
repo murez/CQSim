@@ -24,12 +24,15 @@ class JobTraceInfo(TypedDict):
     num_part: int
     num_pre: int
     thinkTime: int
+    realRunTime: float
     start: int
     end: int
     score: int
     state: int
     happy: int
     estStart: int
+    
+
 
 
 class Job_trace:
@@ -140,15 +143,15 @@ class Job_trace:
                     self.start_offset_B = self.min_sub - self.temp_start
 
                 tempInfo: JobTraceInfo = {
-                    "id": int(temp_dataList[0]),
+                    "id": int(float(temp_dataList[0])),
                     "submit": self.density * (float(temp_dataList[1]) - self.min_sub)
                     + self.temp_start,
                     "wait": float(temp_dataList[2]),
                     "run": float(temp_dataList[3]),
-                    "usedProc": int(temp_dataList[4]),
+                    "usedProc": int(float(temp_dataList[4])),
                     "usedAveCPU": float(temp_dataList[5]),
                     "usedMem": float(temp_dataList[6]),
-                    "reqProc": int(temp_dataList[7]),
+                    "reqProc": int(float(temp_dataList[7])),
                     "reqTime": float(temp_dataList[8]),
                     "reqMem": float(temp_dataList[9]),
                     "status": int(temp_dataList[10]),
@@ -159,6 +162,7 @@ class Job_trace:
                     "num_part": int(temp_dataList[15]),
                     "num_pre": int(temp_dataList[16]),
                     "thinkTime": int(temp_dataList[17]),
+                    "realRunTime": float(temp_dataList[18]),
                     "start": -1,
                     "end": -1,
                     "score": 0,
@@ -180,6 +184,7 @@ class Job_trace:
         # self.debug.debug("* "+self.myInfo+" -- import_job_file",5)
         temp_start = self.start
         regex_str = "([^;\\n]*)[;\\n]"
+        print("job_file", job_file)
         jobFile = open(job_file, "r")
         min_sub = -1
         self.jobTrace = {}
@@ -221,6 +226,7 @@ class Job_trace:
                     "num_part": int(temp_dataList[15]),
                     "num_pre": int(temp_dataList[16]),
                     "thinkTime": int(temp_dataList[17]),
+                    "realRunTime": int(temp_dataList[18]),
                     "start": -1,
                     "end": -1,
                     "score": 0,
@@ -322,13 +328,15 @@ class Job_trace:
 
     def job_submit(self, job_index, job_score=0, job_est_start=-1):
         # self.debug.debug("* "+self.myInfo+" -- job_submit",5)
+
+
+
         self.jobTrace[job_index]["state"] = 1
         self.jobTrace[job_index]["score"] = job_score
         self.jobTrace[job_index]["estStart"] = job_est_start
         self.job_submit_list.remove(job_index)
         self.job_wait_list.append(job_index)
         self.job_wait_size += self.jobTrace[job_index]["reqProc"]
-        return 1
 
     def job_start(self, job_index, time):
         # self.debug.debug("* "+self.myInfo+" -- job_start",5)

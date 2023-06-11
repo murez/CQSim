@@ -110,7 +110,7 @@ class SWFLoader:
                 return (None, line)
 
         if len(splited) < 2 or (
-            self.last_header_indent is not None and indent > self.last_header_indent
+            self.last_header_key is not None and splited[0].strip() in ["http", "https"]
         ):
             # a continuation of last header
             return (self.last_header_key, line)

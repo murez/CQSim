@@ -1,5 +1,6 @@
 import dataclasses
 import json
+from datetime import datetime
 
 import pandas as pd
 
@@ -9,6 +10,18 @@ from cqsim.filter import JobFilter
 from cqsim.filter.job import ConfigData
 from cqsim.types import Time
 from cqsim.utils import dataclass_types_for_pandas
+
+
+def get_start_time(headers: dict[str, str]) -> str:
+    if "StartTime" in headers:
+        return headers["StartTime"]
+
+    if "UnixStartTime" in headers:
+        return datetime.fromtimestamp(int(headers["UnixStartTime"])).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+    raise ValueError("Cannot find start time in headers!")
 
 
 class JobFilterSWF(JobFilter):
@@ -29,7 +42,7 @@ class JobFilterSWF(JobFilter):
         assert self.start >= 0
 
         self.config_data = ConfigData(
-            date=jobs.headers["StartTime"],
+            date=get_start_time(jobs.headers),
             start_offset=min_submit_time - self.start,
         )
 
@@ -39,7 +52,7 @@ class JobFilterSWF(JobFilter):
             if self.input_check(job):
                 filtered_jobs.append(job)
 
-        df = pd.DataFrame([dataclasses.asdict(job) for job in filtered_jobs])
+        df = pd.DataFrame(dataclasses.asdict(job) for job in filtered_jobs)
         df.to_csv(self.save, index=False)
 
         self.job_count = len(filtered_jobs)

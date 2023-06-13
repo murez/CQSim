@@ -14,11 +14,11 @@ class NodeFilterSWF(NodeFilter):
 
     def read_node_structure(self):
         with open(self.struc, "r") as f:
-            structure = swf.load(f)
-        self.build_node_list(structure.headers)
+            headers = swf.load_header(f)
+        self.build_node_list(headers)
 
-        max_procs = int(structure.headers["MaxProcs"])
-        max_nodes = int(structure.headers["MaxNodes"])
+        max_procs = int(headers["MaxProcs"])
+        max_nodes = int(headers["MaxNodes"])
         self.config_data = ConfigData(max_nodes=max_nodes, max_procs=max_procs)
 
     def build_node_list(self, node_info: dict[str, str]):

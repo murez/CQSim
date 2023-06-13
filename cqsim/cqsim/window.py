@@ -25,6 +25,23 @@ class StartWindowPara:
 
 
 class StartWindow:
+    """
+    Provide window operation when look for the next job to start:
+    Receive x job indexes with related system information which
+    need to be scanned in waiting list,
+    Change the order of the waiting jobs according to the
+    window function. Then return the new order.
+    The simulator will call the window operation again when y
+    job has started after the last window operation in one eventiteration.
+    Output x and y.
+
+    * This module will reorder the waiting list before any job
+       starts in this iteration.
+    * Different window mode: Similar to Backfill module
+    * Adapt function: Similar to Backfill module
+    * Extend: Similar to Backfill module
+    """
+
     current_para: Optional[BackfillPara]
     wait_jobs: list[WaitInfo]
     para: StartWindowPara
@@ -86,7 +103,13 @@ class StartWindow:
     def start_window(
         self, wait_jobs: list[WaitInfo], para_in: Optional[BackfillPara] = None
     ):
-        # self.debug.debug("* "+self.display_name+" -- start_window",5)
+        """
+        This is the entry of the adapt module.
+
+        Receive the running time information and store them into the local buffers,
+        then invoke main method to deal with the request.
+        Get the reordered job sequence from the main method and return it to the invoker
+        """
         self.current_para = para_in
         self.wait_jobs = wait_jobs[: self.para.win_size]
         check_len = min(self.para.check_size_in, len(self.wait_jobs))
@@ -95,15 +118,18 @@ class StartWindow:
         return result
 
     def main(self, check_len: int):
-        # self.debug.debug("* "+self.display_name+" -- main",5)
+        """
+        Invoke window method.
+
+        :return: the reordered job sequence
+        """
         if self.use_window:
             return self.window_check(check_len)
         else:
             return [job.index for job in self.wait_jobs[:check_len]]
 
     def window_adapt(self, para_in: Optional[BackfillPara] = None):
-        # self.debug.debug("* "+self.display_name+" -- window_adapt",5)
-        return 0
+        pass
 
     def window_size(self):
         # self.debug.debug("* "+self.display_name+" -- window_size",6)
@@ -122,7 +148,7 @@ class StartWindow:
         self.wait_jobs = []
 
     def window_check(self, check_len: int):
-        # self.debug.debug("* "+self.display_name+" -- window_check",5)
+        """Do the window check and return the reordered sequence of the input job list."""
         assert self.current_para is not None
         all_permutations = permutations(range(check_len))
 

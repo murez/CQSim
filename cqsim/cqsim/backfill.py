@@ -79,7 +79,7 @@ class Backfill:
 
     def backfill(
         self, wait_job: list[WaitInfo], para_in: Optional[BackfillPara] = None
-    ):
+    ) -> Optional[list[int]]:
         # self.debug.debug("* "+self.display_name+" -- backfill",5)
         if len(wait_job) <= 1:
             return []
@@ -127,7 +127,7 @@ class Backfill:
 
     def backfill_cons(self):
         # self.debug.debug("* "+self.display_name+" -- backfill_cons",5)
-        backfill_list = []
+        backfill_list: list[int] = []
         assert self.backfill_parameter is not None
         self.node.predict_reset(self.backfill_parameter.time)
         self.node.reserve(

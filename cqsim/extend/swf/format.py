@@ -5,9 +5,13 @@ The Standard Workload Format
 from __future__ import annotations
 
 import io
-from typing import IO, Optional
+from typing import IO, Callable, Optional, Sequence
+
+import pandas as pd
 
 from cqsim.cqsim.types import Job
+from cqsim.types import FilePathOrBuffer
+from cqsim.utils import dataclass_types, dataclass_types_for_pandas
 
 
 class SWF:
@@ -32,7 +36,7 @@ class SWFLoader:
     headers: dict[str, str]
     jobs: list[Job]
 
-    def _read_header(self, file: IO[str]):
+    def read_header(self, file: io.TextIOBase):
         """
         Read the header of the job file.
         """
@@ -154,6 +158,85 @@ class SWFLoader:
             return job
 
 
+def load_header(stream: io.TextIOBase | str):
+    """Load a SWF file from a stream."""
+    lines: list[str] | io.TextIOBase
+    loader = SWFLoader()
+
+    if isinstance(stream, str):
+        lines = stream.splitlines()
+        for line in lines:
+            loader.load_line(line)
+            if loader.header_parse_done:
+                break
+        return loader.headers
+    elif isinstance(stream, io.TextIOBase):
+        loader.read_header(stream)
+        return loader.headers
+    else:
+        raise TypeError(f"Invalid stream type: {type(stream)}")
+
+
+def load_jobs_df(
+    filepath_or_buffer: FilePathOrBuffer,
+    swf: bool,
+    skiprows: Sequence[int] | int | Callable[[int], bool] = 0,
+    nrows: Optional[int] = None,
+):
+    """Load a SWF file from file or buffer."""
+    field_types = dataclass_types_for_pandas(Job)
+
+    # Dynamically set the header or names argument
+    # We must use this way because None does not mean argument not set
+
+    if swf:
+        df = pd.read_csv(
+            filepath_or_buffer,
+            delim_whitespace=True,  # sep=r"\s+",
+            comment=";",
+            names=list(field_types.keys()),
+            header=None,
+            dtype=field_types,
+            skip_blank_lines=True,
+            skipinitialspace=True,
+            engine="c",
+            skiprows=skiprows,
+            nrows=nrows,
+        )
+    else:
+        df = pd.read_csv(
+            filepath_or_buffer,
+            comment=";",
+            dtype=field_types,
+            skip_blank_lines=True,
+            skipinitialspace=True,
+            engine="c",
+            skiprows=skiprows,
+            nrows=nrows,
+        )
+
+    return df
+
+
+def load_jobs(
+    filepath_or_buffer: FilePathOrBuffer,
+    swf: bool,
+    skiprows: Sequence[int] | int | Callable[[int], bool] = 0,
+    nrows: Optional[int] = None,
+):
+    """Load a SWF file from file or buffer."""
+    df = load_jobs_df(filepath_or_buffer, swf, skiprows=skiprows, nrows=nrows)
+
+    # types = dataclass_types(Job)
+    # https://stackoverflow.com/questions/62647887/preserving-dtypes-when-extracting-a-row-from-a-pandas-dataframe
+    for index, row in df.astype(object).iterrows():
+        job = Job(**row.to_dict())
+        # XXX: Alternative way to convert types:
+        # for field in dataclasses.fields(Job):
+        #     setattr(job, field.name, types[field.name](getattr(job, field.name)))
+        yield job
+
+
 def load(stream: io.TextIOBase | str, header_only: bool = False, start_offset: int = 0):
     """Load a SWF file from a stream."""
     lines: list[str] | io.TextIOBase
@@ -163,6 +246,8 @@ def load(stream: io.TextIOBase | str, header_only: bool = False, start_offset: i
         lines = stream
     else:
         raise TypeError(f"Invalid stream type: {type(stream)}")
+
+    assert header_only
 
     loader = SWFLoader()
     for line in lines:

@@ -48,6 +48,29 @@ class JobTraceInfo:
     happy: int = -1
     estimated_start_time: Optional[Time] = None
 
+    @classmethod
+    def from_job(cls, job: Job):
+        return cls(
+            id=job.id,
+            submit_time=job.submit_time,
+            wait_time=job.wait_time,
+            run_time=job.run_time,
+            allocated_processors=job.allocated_processors,
+            average_cpu_time=job.average_cpu_time,
+            used_memory=job.used_memory,
+            requested_number_processors=job.requested_number_processors,
+            requested_time=job.requested_time,
+            requested_memory=job.requested_memory,
+            status=job.status,
+            user_id=job.user_id,
+            group_id=job.group_id,
+            executable_number=job.executable_number,
+            queue_number=job.queue_number,
+            partition_number=job.partition_number,
+            previous_job_id=job.previous_job_id,
+            think_time_from_previous_job=job.think_time_from_previous_job,
+        )
+
 
 class JobTrace:
     traces: dict[int, JobTraceInfo]
@@ -74,7 +97,7 @@ class JobTrace:
         self.start_offset_B = 0.0
         self.start_date = ""
         self.anchor = anchor
-        self.read_num: int | None = num
+        self.read_count: int | None = num
         self.density = density
         self.debug = debug
         self.traces = dict()
@@ -103,7 +126,7 @@ class JobTrace:
             self.start_offset_A = 0.0
             self.start_offset_B = 0.0
         if num:
-            self.read_num = num
+            self.read_count = num
         if anchor:
             self.anchor = anchor
         if density:
@@ -127,19 +150,14 @@ class JobTrace:
     # TODO: read file is still a mess
 
     def import_job_file(self, job_file: str):
-        # find type for dataframe importing
-        field_types = dataclass_types_for_pandas(Job)
-
+        assert self.anchor >= 0
         # read job file
-        df = pd.read_csv(
-            job_file,
-            dtype=field_types,
-            comment=";",
+        jobs = swf.load_jobs(
+            job_file, swf=False, skiprows=self.anchor, nrows=self.read_count
         )
-
         # set job list
-        for index, row in df.iterrows():
-            self.traces[len(self.traces)] = JobTraceInfo(**row.to_dict())
+        for job in jobs:
+            self.traces[len(self.traces)] = JobTraceInfo.from_job(job)
             self.submit_indices.append(len(self.traces) - 1)
 
     # XREF: JobFilterSWF.output_job_config()
@@ -223,7 +241,7 @@ class JobTrace:
         self.job_wait_cores -= self.traces[job_index].requested_number_processors
 
     def job_finish(self, job_index: int, time: Optional[Time] = None):
-        # self.debug.debug("* "+self.display_name+" -- job_finish",5)
+        """Mark a job as finished. Also removes it from the run queue."""
         self.debug.debug(
             " "
             + "["

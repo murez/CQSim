@@ -35,10 +35,10 @@ class InfoCollect:
         time: Time,
         event: Optional[EventCode],
         uti: float,
-        waitNum=-1,
-        waitSize=-1,
-        inter=-1.0,
-        extend=None,
+        wait_num: int = -1,
+        wait_size: int = -1,
+        inter: float = -1.0,
+        extend: Optional[dict] = None,
     ):
         self.debug.debug("* " + self.display_name + " -- info_collect", 5)
         event_date = time
@@ -47,28 +47,11 @@ class InfoCollect:
             "time": time,
             "event": event,
             "uti": uti,
-            "waitNum": waitNum,
-            "waitSize": waitSize,
+            "waitNum": wait_num,
+            "waitSize": wait_size,
             "inter": inter,
             "extend": extend,
         }
         self.debug.debug("   " + str(temp_info), 4)
         # self.sys_info.append(temp_info)
         return temp_info
-
-    """
-    def info_analysis(self):
-        self.debug.debug("* "+self.display_name+" -- info_analysis",5)
-        return 1
-
-
-    def get_info(self, index):
-        self.debug.debug("* "+self.display_name+" -- get_info",6)
-        if index>=len(self.sys_info):
-            return None
-        return self.sys_info[index]
-
-    def get_len(self):
-        self.debug.debug("* "+self.display_name+" -- get_len",6)
-        return len(self.sys_info)
-    """

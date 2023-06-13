@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import os
 from typing import Literal, Protocol, TypeAlias
+
+from pandas._typing import ReadCsvBuffer
 
 
 # stable
@@ -14,7 +18,8 @@ FileDescriptorLike: TypeAlias = int | HasFileno  # stable
 FileDescriptorOrPath: TypeAlias = int | StrOrBytesPath
 Time: TypeAlias = float
 EventCode: TypeAlias = Literal["S", "E", "Q"]
-
+FilePath = str | os.PathLike[str]
+FilePathOrBuffer = FilePath | ReadCsvBuffer[bytes] | ReadCsvBuffer[str]
 OpenTextModeUpdating: TypeAlias = Literal[
     "r+",
     "+r",
